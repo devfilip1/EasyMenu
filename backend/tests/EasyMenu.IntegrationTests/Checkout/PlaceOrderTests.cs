@@ -285,21 +285,6 @@ public sealed partial class PlaceOrderTests(EasyMenuApiFactory factory) : Integr
 
     // ------------------------------------------------------------------ pickup code collision
 
-    /// <summary>Returns the queued codes in order, then falls back to random valid codes.</summary>
-    private sealed class ScriptedPickupCodeGenerator(params string[] codes) : IPickupCodeGenerator
-    {
-        private readonly Queue<string> _codes = new(codes);
-        private readonly object _lock = new();
-
-        public string Generate()
-        {
-            lock (_lock)
-            {
-                return _codes.Count > 0 ? _codes.Dequeue() : EasyMenu.Domain.Orders.PickupCode.Generate();
-            }
-        }
-    }
-
     [Fact]
     public async Task Pickup_code_collision_with_an_active_order_retries_with_another_code()
     {

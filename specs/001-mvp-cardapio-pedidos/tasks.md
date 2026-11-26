@@ -620,7 +620,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
   - `MarkPickedUp` fora de ready dá `order_not_ready`;
   - `MarkPickedUp` em ready grava `PickedUpAt`, e chamá-lo de novo é idempotente;
   - qualquer mudança de parte após `picked_up` dá `invalid_status_transition`.
-- [ ] T060 [US3] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Kitchen/KitchenEndpointsTests.cs` (depende de: T047):
+- [X] T060 [US3] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Kitchen/KitchenEndpointsTests.cs` (depende de: T047):
   - `GET /api/kitchen/orders` lista só os pedidos não retirados, do mais antigo ao mais novo, e cada parte só com os itens do seu setor;
   - owner também acessa (FR-033a);
   - anônimo dá 401;
