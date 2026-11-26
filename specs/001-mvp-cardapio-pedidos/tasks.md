@@ -102,7 +102,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - token expirado (avançar o `FakeTimeProvider`);
   - token de usuário cujo `SecurityStamp` mudou no banco;
   - token de usuário com `IsActive=false` no banco.
-- [ ] T009 [P] [TEST-BACK] Testes do tratamento de erros em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/ErrorHandlingTests.cs` (depende de: T006). Usar um controller só de teste, registrado via `ConfigureTestServices`/`ApplicationParts`. Verificar que:
+- [X] T009 [P] [TEST-BACK] Testes do tratamento de erros em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/ErrorHandlingTests.cs` (depende de: T006). Usar um controller só de teste, registrado via `ConfigureTestServices`/`ApplicationParts`. Verificar que:
   - `DomainException("x")` vira `application/problem+json` com `code`;
   - um model inválido vira 400 `validation_failed` com `errors` em camelCase;
   - `NotFoundException` vira 404 `not_found`;

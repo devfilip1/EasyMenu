@@ -43,6 +43,16 @@ public sealed class EasyMenuApiFactory : WebApplicationFactory<Program>, IAsyncL
     /// </summary>
     public FakeTimeProvider Clock => _timeProvider.Current;
 
+    private WebApplicationFactory<Program>? _withTestControllers;
+
+    /// <summary>
+    /// A second host (same database, settings and clock) that also exposes the test-only controllers of this
+    /// assembly (e.g. <see cref="ErrorTestController"/>). Kept separate so they never show up in /openapi/v1.json.
+    /// </summary>
+    public WebApplicationFactory<Program> WithTestControllers =>
+        _withTestControllers ??= WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+            services.AddControllers().AddApplicationPart(typeof(EasyMenuApiFactory).Assembly)));
+
     /// <summary>Installs a fresh <see cref="FakeTimeProvider"/> starting at the real current time.</summary>
     public FakeTimeProvider ResetClock() => _timeProvider.Current = new FakeTimeProvider(DateTimeOffset.UtcNow);
 
@@ -58,6 +68,11 @@ public sealed class EasyMenuApiFactory : WebApplicationFactory<Program>, IAsyncL
 
     async Task IAsyncLifetime.DisposeAsync()
     {
+        if (_withTestControllers is not null)
+        {
+            await _withTestControllers.DisposeAsync();
+        }
+
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
 
