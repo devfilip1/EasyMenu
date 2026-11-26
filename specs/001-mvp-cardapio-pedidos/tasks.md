@@ -542,7 +542,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
 - [X] T098 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/CheckoutRateLimitTests.cs` (depende de: T047, T094), com `WithRateLimits(2)`:
   - a 3ª chamada de `POST /api/public/establishments/{slug}/orders` na janela dá 429 `rate_limited` com `Retry-After`, mesmo quando as anteriores foram 400 (`empty_cart`);
   - `GET /api/public/establishments/{slug}/menu` não é limitado.
-- [ ] T099 [US2] [IMPL-BACK] `[EnableRateLimiting("checkout")]` e `ProducesResponseType` 429 em `PublicOrdersController.PlaceOrder` (depende de: T049, T095, T098). T098 e `OpenApiContractTests` verdes.
+- [X] T099 [US2] [IMPL-BACK] `[EnableRateLimiting("checkout")]` e `ProducesResponseType` 429 em `PublicOrdersController.PlaceOrder` (depende de: T049, T095, T098). T098 e `OpenApiContractTests` verdes.
 
 ### Fatia 2c: Cardápio público e carrinho (front)
 
