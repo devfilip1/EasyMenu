@@ -383,7 +383,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - 409 `slug_taken` mostra "Este endereço já está em uso" no campo slug;
   - 409 `email_taken` mostra a mensagem no campo e-mail;
   - sucesso faz `setSession` e navega para `/admin/cardapio`.
-- [ ] T032 [US1] [IMPL-FRONT] `frontend/src/app/features/auth/{login.page.ts,register.page.ts}` (+ html/scss) (depende de: T030, T031). T030 e T031 verdes.
+- [X] T032 [US1] [IMPL-FRONT] `frontend/src/app/features/auth/{login.page.ts,register.page.ts}` (+ html/scss) (depende de: T030, T031). T030 e T031 verdes.
 - [X] T033 [P] [US1] [TEST-FRONT] Shell do admin e configurações:
   - `frontend/src/app/features/admin/admin-shell.component.spec.ts`: navegação Cardápio/Equipe/Pedidos/Estabelecimento, botão Sair (`logout` → `/login`) e link "Painel da cozinha";
   - `frontend/src/app/features/admin/settings/settings.page.spec.ts`: mostra o slug só leitura e o link público `/m/{slug}`, renomeia via `updateEstablishment` e mostra os erros de validação.

@@ -4,19 +4,19 @@ import { ERROR_CODE } from '../../api/generated/models/error-code-array';
 
 const MESSAGES: Record<ErrorCode, string> = {
   validation_failed: 'Confira os campos destacados e tente novamente.',
-  invalid_credentials: 'E-mail ou senha incorretos.',
+  invalid_credentials: 'E-mail ou senha inválidos.',
   email_taken: 'Este e-mail já está cadastrado.',
-  slug_taken: 'Este endereço de cardápio já está em uso. Escolha outro.',
+  slug_taken: 'Este endereço já está em uso. Escolha outro.',
   invalid_slug: 'Endereço de cardápio inválido. Use letras minúsculas, números e hífens.',
   not_found: 'Não encontramos o que você procurava.',
   category_not_found: 'Categoria não encontrada.',
-  category_not_empty: 'Esta categoria ainda tem itens. Mova ou exclua os itens antes.',
+  category_not_empty: 'Remova ou mova os itens antes de excluir a categoria.',
   invalid_order_list:
     'A nova ordem não confere com a lista atual. Atualize a página e tente de novo.',
   invalid_price: 'Informe um preço maior que zero.',
-  invalid_promotional_price: 'O preço promocional deve ser menor que o preço normal.',
+  invalid_promotional_price: 'O preço promocional deve ser maior que zero e menor que o preço.',
   invalid_image_type: 'Formato de imagem não suportado. Envie JPG, PNG ou WebP.',
-  image_too_large: 'A imagem é grande demais. Envie uma foto menor.',
+  image_too_large: 'A imagem é grande demais. Envie uma foto de até 5 MB.',
   establishment_not_found: 'Estabelecimento não encontrado.',
   empty_cart: 'Seu carrinho está vazio.',
   invalid_quantity: 'Quantidade inválida.',
@@ -46,4 +46,23 @@ export function problemCode(error: HttpErrorResponse): ErrorCode | null {
 /** pt-BR message for an `ErrorCode`; a generic message when the code is unknown or absent. */
 export function problemMessage(code: ErrorCode | null | undefined): string {
   return (code && MESSAGES[code]) || GENERIC_MESSAGE;
+}
+
+/** Code of any error thrown by an API call (non-HTTP errors give `null`). */
+export function errorCode(error: unknown): ErrorCode | null {
+  return error instanceof HttpErrorResponse ? problemCode(error) : null;
+}
+
+/** First message per field of a `validation_failed` problem (`errors` extension, camelCase keys). */
+export function problemFieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof HttpErrorResponse)) return {};
+  const body: unknown = error.error;
+  if (typeof body !== 'object' || body === null || !('errors' in body)) return {};
+  const errors = body.errors;
+  if (typeof errors !== 'object' || errors === null) return {};
+  const result: Record<string, string> = {};
+  for (const [field, messages] of Object.entries(errors)) {
+    if (Array.isArray(messages) && typeof messages[0] === 'string') result[field] = messages[0];
+  }
+  return result;
 }
