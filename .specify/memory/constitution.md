@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-- Versão: (template) → 1.0.0
+- Versão: 1.0.0 → 1.0.1 (PATCH: regra x-pending e conformidade de schema no Princípio II)
 - Princípios definidos: I. TDD Inegociável; II. Contrato Primeiro; III. Isolamento Multi-tenant;
   IV. Integridade Monetária e Snapshots; V. Simplicidade (YAGNI)
 - Seções adicionadas: Stack e Restrições Técnicas; Fluxo de Desenvolvimento com Agentes; Governança
@@ -38,7 +38,10 @@ passar e mantém as specs como critério objetivo de aceite.
   mudanças de contrato são responsabilidade do agente Arquiteto.
 - O frontend consome a API por um client TypeScript gerado a partir do contrato; chamadas HTTP
   escritas à mão contra endpoints da API são proibidas.
-- O backend MUST ter teste que valida que a API exposta corresponde ao contrato.
+- O backend MUST ter teste que valida que a API exposta corresponde ao contrato em rotas,
+  status codes e schemas.
+- Operações ainda não implementadas são marcadas `x-pending: true` no contrato. A única edição
+  de contrato permitida ao Dev Back é remover essa marca da operação que acabou de implementar.
 
 **Racional**: permite que back e front sejam desenvolvidos em paralelo por agentes diferentes
 sem divergência.
@@ -112,4 +115,4 @@ multi-tenant.
 - Versionamento semântico: MAJOR para remoção/redefinição de princípio, MINOR para princípio ou
   seção nova, PATCH para esclarecimentos.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
+**Version**: 1.0.1 | **Ratified**: 2026-11-25 | **Last Amended**: 2026-11-25
