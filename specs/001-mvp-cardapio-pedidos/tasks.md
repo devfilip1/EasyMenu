@@ -642,7 +642,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
 
 ### Fatia 3b: Hub da cozinha (back)
 
-- [ ] T062 [US3] [TEST-BACK] Helpers e testes do hub da cozinha (depende de: T060):
+- [X] T062 [US3] [TEST-BACK] Helpers e testes do hub da cozinha (depende de: T060):
   - helpers `ConnectKitchenHubAsync(token)` (LongPolling + `HttpMessageHandlerFactory` do TestServer) e `WaitForEventAsync<T>(connection, name, timeout 5s)` em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/HubTestHelpers.cs`;
   - `backend/tests/EasyMenu.IntegrationTests/Realtime/KitchenHubTests.cs`:
     - conectar sem token falha: o negotiate dá 401 `application/problem+json` `unauthorized` (R16);
