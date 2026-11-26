@@ -610,7 +610,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - **sem erro**, o elemento da região existe no DOM, tem `aria-live="polite"` e não está oculto (sem `display: none`, `hidden` ou `aria-hidden`; checar com `getComputedStyle`);
   - ao passar a ter erro, o texto aparece **no mesmo nó** que já estava renderizado (mesma referência de elemento), para ser anunciado;
   - o `id` usado em `aria-describedby` é estável entre os estados.
-- [ ] T129 [US2] [IMPL-FRONT] Em `frontend/src/app/shared/forms/field-error.component.ts`: remover `:host:empty { display: none }` e manter a região sempre renderizada (vazia quando válido; o espaço visual é evitado com altura mínima zero, não escondendo a região) (depende de: T128). T128 verde e as specs de forms existentes continuam verdes.
+- [X] T129 [US2] [IMPL-FRONT] Em `frontend/src/app/shared/forms/field-error.component.ts`: remover `:host:empty { display: none }` e manter a região sempre renderizada (vazia quando válido; o espaço visual é evitado com altura mínima zero, não escondendo a região) (depende de: T128). T128 verde e as specs de forms existentes continuam verdes.
 - [X] T130 [P] [US2] [TEST-FRONT] Texto acessível do preço promocional (depende de: T039, T052):
   - criar `frontend/src/app/features/public-menu/menu-item-card.component.spec.ts` e ampliar `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`;
   - item em promoção: o texto acessível contém "Preço original" junto ao valor riscado e "Preço promocional" junto ao valor efetivo, num elemento `.sr-only` (classe global já existente em `frontend/src/styles.scss`);
