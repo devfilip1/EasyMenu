@@ -530,7 +530,6 @@ paths:
   # ---------------------------------------------------------------- Kitchen (Owner ou Kitchen)
   /api/kitchen/orders:
     get:
-      x-pending: true
       tags: [Kitchen]
       operationId: listKitchenOrders
       summary: Pedidos em andamento (status != picked_up), do mais antigo ao mais novo (FR-028).
@@ -553,7 +552,6 @@ paths:
         required: true
         schema: { $ref: "#/components/schemas/Station" }
     put:
-      x-pending: true
       tags: [Kitchen]
       operationId: updateOrderPartStatus
       summary: Avança o status de uma parte (FR-025). Repetir o status atual é idempotente.
@@ -586,7 +584,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/OrderId"
     put:
-      x-pending: true
       tags: [Kitchen]
       operationId: markOrderPickedUp
       summary: Marca como Retirado; só para pedidos Prontos (FR-027). Idempotente.
@@ -655,7 +652,6 @@ paths:
   # ---------------------------------------------------------------- Staff (Owner)
   /api/staff:
     get:
-      x-pending: true
       tags: [Staff]
       operationId: listStaff
       summary: Membros da Cozinha do estabelecimento (ativos e desativados).
@@ -670,7 +666,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
-      x-pending: true
       tags: [Staff]
       operationId: createStaffMember
       summary: Cadastra membro da Cozinha (FR-032).
@@ -698,7 +693,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     put:
-      x-pending: true
       tags: [Staff]
       operationId: deactivateStaffMember
       summary: Desativa a conta e corta o acesso imediatamente, tanto REST quanto SignalR (FR-034). Idempotente.

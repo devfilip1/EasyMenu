@@ -3,6 +3,7 @@ using EasyMenu.Domain.Menu;
 using EasyMenu.Domain.Orders;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace EasyMenu.Application.Abstractions;
 
@@ -18,6 +19,9 @@ public interface IAppDbContext
     DbSet<MenuItem> MenuItems { get; }
 
     DbSet<Order> Orders { get; }
+
+    /// <summary>Used to discard stale entities before retrying after a concurrency conflict.</summary>
+    ChangeTracker ChangeTracker { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

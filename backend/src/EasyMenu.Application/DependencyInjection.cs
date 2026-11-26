@@ -17,6 +17,7 @@ public static class DependencyInjection
         services.AddScoped<MenuItemService>();
         services.AddScoped<PublicMenuService>();
         services.AddScoped<CheckoutService>();
+        services.AddScoped<KitchenService>();
         services.AddSingleton<IPickupCodeGenerator, RandomPickupCodeGenerator>();
         return services;
     }

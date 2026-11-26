@@ -8,6 +8,7 @@ public sealed class Order : ITenantOwned
     public const int CustomerNameMaxLength = 60;
     public const int MinQuantity = 1;
     public const int MaxQuantity = 99;
+    public const string InvalidStatusTransition = "invalid_status_transition";
 
     private readonly List<OrderItem> _items = [];
     private readonly List<OrderPart> _parts = [];
@@ -106,16 +107,40 @@ public sealed class Order : ITenantOwned
     /// going back or changing a picked-up order gives <c>invalid_status_transition</c>, a missing station gives
     /// <c>not_found</c>. Recalculates <see cref="Status"/> afterwards.
     /// </summary>
-    /// <remarks>Implementation belongs to T061.</remarks>
-    public void MovePart(Menu.Station station, PartStatus target, DateTimeOffset now) => throw new NotImplementedException();
+    public void MovePart(Menu.Station station, PartStatus target, DateTimeOffset now)
+    {
+        if (Status == OrderStatus.PickedUp)
+        {
+            throw new DomainException(InvalidStatusTransition);
+        }
+
+        var part = _parts.SingleOrDefault(p => p.Station == station) ?? throw new DomainException("not_found");
+        part.MoveTo(target, now);
+        RecalculateStatus();
+    }
 
     /// <summary>Derives <see cref="Status"/> from the parts and <see cref="PickedUpAt"/> (data-model table, FR-026).</summary>
-    /// <remarks>Implementation belongs to T061.</remarks>
-    public void RecalculateStatus() => throw new NotImplementedException();
+    public void RecalculateStatus() => Status = PickedUpAt is not null ? OrderStatus.PickedUp
+        : _parts.All(p => p.Status == PartStatus.Ready) ? OrderStatus.Ready
+        : _parts.Any(p => p.Status != PartStatus.Received) ? OrderStatus.InPreparation
+        : OrderStatus.Paid;
 
     /// <summary>Marks the order as picked up; only from <c>ready</c> (<c>order_not_ready</c>), idempotent once picked up.</summary>
-    /// <remarks>Implementation belongs to T061.</remarks>
-    public void MarkPickedUp(DateTimeOffset now) => throw new NotImplementedException();
+    public void MarkPickedUp(DateTimeOffset now)
+    {
+        if (Status == OrderStatus.PickedUp)
+        {
+            return; // keeps the first pickup time
+        }
+
+        if (Status != OrderStatus.Ready)
+        {
+            throw new DomainException("order_not_ready");
+        }
+
+        PickedUpAt = now;
+        RecalculateStatus();
+    }
 
     private static bool IsValidQuantity(int quantity) => quantity is >= MinQuantity and <= MaxQuantity;
 

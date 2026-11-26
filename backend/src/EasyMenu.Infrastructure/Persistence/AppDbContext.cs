@@ -32,6 +32,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
+        MarkOrdersOfChangedPartsAsModified();
         try
         {
             return base.SaveChanges(acceptAllChangesOnSuccess);
@@ -44,6 +45,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
 
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
+        MarkOrdersOfChangedPartsAsModified();
         try
         {
             return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
@@ -51,6 +53,26 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
         catch (DbUpdateException exception) when (UniqueViolation(exception) is { } violation)
         {
             throw violation;
+        }
+    }
+
+    // The order is the consistency boundary of its parts: a part change must also update (and version-check) the
+    // order row, even when the derived status did not change, so concurrent part changes always conflict on xmin.
+    private void MarkOrdersOfChangedPartsAsModified()
+    {
+        var changedOrderIds = ChangeTracker.Entries<OrderPart>()
+            .Where(e => e.State == EntityState.Modified)
+            .Select(e => e.Property<Guid?>("OrderId").CurrentValue)
+            .ToHashSet();
+        if (changedOrderIds.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var order in ChangeTracker.Entries<Order>()
+                     .Where(e => e.State == EntityState.Unchanged && changedOrderIds.Contains(e.Entity.Id)))
+        {
+            order.State = EntityState.Modified;
         }
     }
 

@@ -661,7 +661,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
   - **isolamento**: cozinha de B nas rotas de pedido de A dá 404, e a lista de B não traz pedidos de A.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): as 3 operações `/api/kitchen/...`.
-- [ ] T061 [US3] [IMPL-BACK] Transições e painel (depende de: T049, T059, T060). T059 e T060 verdes.
+- [X] T061 [US3] [IMPL-BACK] Transições e painel (depende de: T049, T059, T060). T059 e T060 verdes.
   - transições em `OrderPart.MoveTo`, `Order.RecalculateStatus` e `Order.MarkPickedUp`;
   - `backend/src/EasyMenu.Application/Orders/KitchenService.cs` (retry único em `DbUpdateConcurrencyException`);
   - `backend/src/EasyMenu.Api/Controllers/KitchenController.cs` (policy `KitchenAccess`).
