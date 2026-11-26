@@ -1,0 +1,1 @@
+Este arquivo nao e uma imagem. Usado nos testes E2E de upload invalido.
