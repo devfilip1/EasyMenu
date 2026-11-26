@@ -1,7 +1,9 @@
 namespace EasyMenu.Api.Contracts;
 
-public sealed record HealthResponse(string Status)
+public sealed record HealthResponse(HealthStatus Status);
+
+public enum HealthStatus
 {
-    public const string Healthy = "healthy";
-    public const string Unhealthy = "unhealthy";
+    Healthy,
+    Unhealthy,
 }

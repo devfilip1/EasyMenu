@@ -15,7 +15,7 @@ public sealed class HealthController(AppDbContext db) : ControllerBase
     {
         var canConnect = await db.Database.CanConnectAsync(cancellationToken);
         return canConnect
-            ? Ok(new HealthResponse(HealthResponse.Healthy))
-            : StatusCode(StatusCodes.Status503ServiceUnavailable, new HealthResponse(HealthResponse.Unhealthy));
+            ? Ok(new HealthResponse(HealthStatus.Healthy))
+            : StatusCode(StatusCodes.Status503ServiceUnavailable, new HealthResponse(HealthStatus.Unhealthy));
     }
 }

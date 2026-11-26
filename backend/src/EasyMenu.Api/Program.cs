@@ -1,11 +1,15 @@
+using EasyMenu.Api.OpenApi;
+using EasyMenu.Api.Serialization;
 using EasyMenu.Infrastructure;
 
 const string FrontendCorsPolicy = "Frontend";
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => ApiJsonOptions.Apply(options.JsonSerializerOptions));
+builder.Services.ConfigureHttpJsonOptions(options => ApiJsonOptions.Apply(options.SerializerOptions));
+builder.Services.AddOpenApi(options => options.AddSchemaTransformer<StringEnumSchemaTransformer>());
 builder.Services.AddSignalR();
 builder.Services.AddInfrastructure();
 
