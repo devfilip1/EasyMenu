@@ -826,7 +826,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
     - paginação;
     - a linha leva a `/admin/pedidos/:orderId`.
   - `order-detail.page.spec.ts`: itens com o preço do snapshot e subtotal, total, e partes com o status.
-- [ ] T087 [US5] [IMPL-FRONT] `frontend/src/app/features/admin/staff/staff.page.ts` e `frontend/src/app/features/admin/orders/{orders.page.ts,order-detail.page.ts}` (depende de: T034, T085, T086). T085 e T086 verdes.
+- [X] T087 [US5] [IMPL-FRONT] `frontend/src/app/features/admin/staff/staff.page.ts` e `frontend/src/app/features/admin/orders/{orders.page.ts,order-detail.page.ts}` (depende de: T034, T085, T086). T085 e T086 verdes.
 - [X] T088 [US5] [TEST-FRONT] `frontend/e2e/us5-staff.spec.ts` (depende de: T069). Fluxo:
   - Dono cria a Cozinha pela UI;
   - contexto B faz login e cai em `/cozinha`;
