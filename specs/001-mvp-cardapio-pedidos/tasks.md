@@ -387,7 +387,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 - [X] T033 [P] [US1] [TEST-FRONT] Shell do admin e configurações:
   - `frontend/src/app/features/admin/admin-shell.component.spec.ts`: navegação Cardápio/Equipe/Pedidos/Estabelecimento, botão Sair (`logout` → `/login`) e link "Painel da cozinha";
   - `frontend/src/app/features/admin/settings/settings.page.spec.ts`: mostra o slug só leitura e o link público `/m/{slug}`, renomeia via `updateEstablishment` e mostra os erros de validação.
-- [ ] T034 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/admin-shell.component.ts` (rota pai `/admin` com `<router-outlet>`) e `frontend/src/app/features/admin/settings/settings.page.ts` (depende de: T033). T033 verde.
+- [X] T034 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/admin-shell.component.ts` (rota pai `/admin` com `<router-outlet>`) e `frontend/src/app/features/admin/settings/settings.page.ts` (depende de: T033). T033 verde.
 
 ### Fatia 1f: Cardápio admin (front)
 

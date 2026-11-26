@@ -18,7 +18,8 @@ export const routes: Routes = [
     path: 'admin',
     title: 'Admin',
     canActivate: [ownerGuard],
-    loadComponent: () => import('./features/admin/admin.page').then((m) => m.AdminPage),
+    loadComponent: () =>
+      import('./features/admin/admin-shell.component').then((m) => m.AdminShellComponent),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'cardapio' },
       {
