@@ -555,7 +555,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - persiste por slug no `localStorage` e isola os slugs;
   - `clear()`;
   - `syncWithMenu(menu)` atualiza preço e nome e marca as linhas indisponíveis.
-- [ ] T051 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T050). T050 verde.
+- [X] T051 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T050). T050 verde.
 - [X] T052 [P] [US2] [TEST-FRONT] `frontend/src/app/features/public-menu/public-menu.page.spec.ts`:
   - carrega `getPublicMenu(slug)` pelo input de rota;
   - mostra o nome do estabelecimento e as categorias e itens na ordem;
