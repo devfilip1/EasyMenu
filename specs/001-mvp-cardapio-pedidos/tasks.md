@@ -788,12 +788,12 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ### Fatia 5d: Front
 
-- [ ] T085 [P] [US5] [TEST-FRONT] `frontend/src/app/features/admin/staff/staff.page.spec.ts`:
+- [X] T085 [P] [US5] [TEST-FRONT] `frontend/src/app/features/admin/staff/staff.page.spec.ts`:
   - lista nome, e-mail e situação (Ativo/Desativado);
   - formulário de cadastro com validação (nome, e-mail, senha ≥ 8);
   - 409 `email_taken` mostra a mensagem;
   - "Desativar" pede confirmação, chama `deactivateStaffMember` e atualiza a linha.
-- [ ] T086 [P] [US5] [TEST-FRONT] Pedidos admin:
+- [X] T086 [P] [US5] [TEST-FRONT] Pedidos admin:
   - `frontend/src/app/features/admin/orders/orders.page.spec.ts`:
     - colunas código, cliente ("—" quando ausente), data/hora `dd/MM/yyyy HH:mm`, total (`BrlPipe`) e status em pt-BR;
     - o select de status chama `listOrders({status})`;
@@ -801,7 +801,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
     - a linha leva a `/admin/pedidos/:orderId`.
   - `order-detail.page.spec.ts`: itens com o preço do snapshot e subtotal, total, e partes com o status.
 - [ ] T087 [US5] [IMPL-FRONT] `frontend/src/app/features/admin/staff/staff.page.ts` e `frontend/src/app/features/admin/orders/{orders.page.ts,order-detail.page.ts}` (depende de: T034, T085, T086). T085 e T086 verdes.
-- [ ] T088 [US5] [TEST-FRONT] `frontend/e2e/us5-staff.spec.ts` (depende de: T069). Fluxo:
+- [X] T088 [US5] [TEST-FRONT] `frontend/e2e/us5-staff.spec.ts` (depende de: T069). Fluxo:
   - Dono cria a Cozinha pela UI;
   - contexto B faz login e cai em `/cozinha`;
   - Cozinha tentando `/admin` é redirecionada;
