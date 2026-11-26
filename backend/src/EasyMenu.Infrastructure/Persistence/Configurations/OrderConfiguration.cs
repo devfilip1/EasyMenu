@@ -32,8 +32,8 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => new { o.EstablishmentId, o.Status, o.CreatedAt }).IsDescending(false, false, true);
         builder.HasOne<Establishment>().WithMany().HasForeignKey(o => o.EstablishmentId).OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasMany(o => o.Items).WithOne().HasForeignKey("OrderId").OnDelete(DeleteBehavior.Cascade);
-        builder.HasMany(o => o.Parts).WithOne().HasForeignKey("OrderId").OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(o => o.Items).WithOne().HasForeignKey("OrderId").IsRequired().OnDelete(DeleteBehavior.Cascade);
+        builder.HasMany(o => o.Parts).WithOne().HasForeignKey("OrderId").IsRequired().OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(o => o.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
         builder.Navigation(o => o.Parts).UsePropertyAccessMode(PropertyAccessMode.Field);
     }

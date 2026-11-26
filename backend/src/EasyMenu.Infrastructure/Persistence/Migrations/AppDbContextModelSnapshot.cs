@@ -240,7 +240,7 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("name_snapshot");
 
-                    b.Property<Guid?>("OrderId")
+                    b.Property<Guid>("OrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_id");
 
@@ -277,7 +277,7 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<Guid?>("OrderId")
+                    b.Property<Guid>("OrderId")
                         .HasColumnType("uuid")
                         .HasColumnName("order_id");
 
@@ -416,6 +416,7 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("fk_order_items_orders_order_id");
                 });
 
@@ -425,6 +426,7 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .WithMany("Parts")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("fk_order_parts_orders_order_id");
                 });
 

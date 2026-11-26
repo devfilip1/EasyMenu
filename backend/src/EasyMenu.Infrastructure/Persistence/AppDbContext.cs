@@ -62,7 +62,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
     {
         var changedOrderIds = ChangeTracker.Entries<OrderPart>()
             .Where(e => e.State == EntityState.Modified)
-            .Select(e => e.Property<Guid?>("OrderId").CurrentValue)
+            .Select(e => e.Property<Guid>("OrderId").CurrentValue)
             .ToHashSet();
         if (changedOrderIds.Count == 0)
         {
