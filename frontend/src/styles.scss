@@ -271,8 +271,9 @@ textarea {
   color: var(--danger);
 }
 
+/* Compact look, but still a 44 px touch target (SC-008). */
 .btn-sm {
-  min-height: 36px;
+  min-height: 44px;
   padding: 0.3rem 0.65rem;
   font-size: 0.875rem;
 }
