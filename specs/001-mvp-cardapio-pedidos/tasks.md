@@ -600,23 +600,23 @@ código e conferir o total calculado pelo servidor (E2E T057).
 
 ### Fatia 2e: Ajustes da revisão 5 (US1 + front US2, Coruja)
 
-- [ ] T126 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/core/errors/problem.spec.ts` para `errorCode(err, notFound)` (introduzido em a54e11c sem spec) (depende de: T016):
+- [X] T126 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/core/errors/problem.spec.ts` para `errorCode(err, notFound)` (introduzido em a54e11c sem spec) (depende de: T016):
   - 404 **sem** corpo ProblemDetails (corpo vazio, string ou `null`) com `notFound` informado devolve esse código de fallback;
   - 404 **com** ProblemDetails devolve o `code` do corpo, e não o fallback;
   - outros status sem ProblemDetails (0, 400, 500) devolvem `null` mesmo com `notFound` informado;
   - sem `notFound`, um 404 sem corpo devolve `null`.
 - [ ] T127 [US2] [IMPL-FRONT] Ajustar `errorCode` em `frontend/src/app/core/errors/problem.ts` até T126 ficar verde. Se já passar, registrar no commit que nenhuma mudança foi necessária (depende de: T126).
-- [ ] T128 [P] [US2] [TEST-FRONT] Criar `frontend/src/app/shared/forms/field-error.component.spec.ts` (depende de: T119):
+- [X] T128 [P] [US2] [TEST-FRONT] Criar `frontend/src/app/shared/forms/field-error.component.spec.ts` (depende de: T119):
   - **sem erro**, o elemento da região existe no DOM, tem `aria-live="polite"` e não está oculto (sem `display: none`, `hidden` ou `aria-hidden`; checar com `getComputedStyle`);
   - ao passar a ter erro, o texto aparece **no mesmo nó** que já estava renderizado (mesma referência de elemento), para ser anunciado;
   - o `id` usado em `aria-describedby` é estável entre os estados.
 - [ ] T129 [US2] [IMPL-FRONT] Em `frontend/src/app/shared/forms/field-error.component.ts`: remover `:host:empty { display: none }` e manter a região sempre renderizada (vazia quando válido; o espaço visual é evitado com altura mínima zero, não escondendo a região) (depende de: T128). T128 verde e as specs de forms existentes continuam verdes.
-- [ ] T130 [P] [US2] [TEST-FRONT] Texto acessível do preço promocional (depende de: T039, T052):
+- [X] T130 [P] [US2] [TEST-FRONT] Texto acessível do preço promocional (depende de: T039, T052):
   - criar `frontend/src/app/features/public-menu/menu-item-card.component.spec.ts` e ampliar `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`;
   - item em promoção: o texto acessível contém "Preço original" junto ao valor riscado e "Preço promocional" junto ao valor efetivo, num elemento `.sr-only` (classe global já existente em `frontend/src/styles.scss`);
   - item sem promoção não exibe nenhum dos dois rótulos.
 - [ ] T131 [US2] [IMPL-FRONT] Adicionar `<span class="sr-only">Preço original</span>` e `<span class="sr-only">Preço promocional</span>` em `frontend/src/app/features/public-menu/menu-item-card.component.ts` e `frontend/src/app/features/admin/menu/menu-items-list.component.ts` (depende de: T130). T130 verde.
-- [ ] T132 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/features/public-menu/cart.store.spec.ts` com `localStorage` adulterado antes de restaurar (depende de: T050):
+- [X] T132 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/features/public-menu/cart.store.spec.ts` com `localStorage` adulterado antes de restaurar (depende de: T050):
   - quantidades `0` e `-3` viram 1;
   - `150` vira 99;
   - quantidade não inteira (`'abc'`, `null`, `1.5`) **descarta** a linha;
