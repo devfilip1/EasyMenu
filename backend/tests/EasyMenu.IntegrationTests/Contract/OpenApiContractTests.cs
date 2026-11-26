@@ -21,4 +21,15 @@ public sealed class OpenApiContractTests(EasyMenuApiFactory factory) : Integrati
             "the API (/openapi/v1.json) must conform to contracts/openapi.yaml. {0} divergence(s):{1}{2}{1}",
             divergences.Count, Environment.NewLine, string.Join(Environment.NewLine, divergences.Select(d => "  - " + d)));
     }
+
+    /// <summary>MVP closure (T090): every contract operation is implemented, so no <c>x-pending</c> may remain.</summary>
+    [Fact]
+    public void Contract_has_no_pending_operations()
+    {
+        var pending = OpenApiContractComparer.PendingOperations(OpenApiDocuments.LoadContract());
+
+        pending.Should().BeEmpty(
+            "the MVP is closed: remove x-pending from contracts/openapi.yaml once each operation is implemented. Still pending:{0}{1}{0}",
+            Environment.NewLine, string.Join(Environment.NewLine, pending.Select(p => "  - " + p)));
+    }
 }

@@ -479,6 +479,39 @@ public sealed class OpenApiContractComparerTests
             .Contain("allOf conflict in the contract").And.Contain("property 'quantity'");
     }
 
+    // ------------------------------------------------------------------ pending detection (T090)
+
+    [Fact]
+    public void Pending_operations_are_listed()
+    {
+        // The sample contract marks GET /orders as pending.
+        OpenApiContractComparer.PendingOperations(_contract).Should().Equal("GET /orders");
+    }
+
+    [Fact]
+    public void Quoted_true_also_counts_as_pending()
+    {
+        _contract["paths"]!["/items/{id}"]!["get"]!["x-pending"] = "true";
+
+        OpenApiContractComparer.PendingOperations(_contract).Should().Equal("GET /items/{id}", "GET /orders");
+    }
+
+    [Fact]
+    public void Contract_without_x_pending_has_no_pending_operations()
+    {
+        ((JsonObject)_contract["paths"]!["/orders"]!["get"]!).Remove("x-pending");
+
+        OpenApiContractComparer.PendingOperations(_contract).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void X_pending_false_is_not_pending()
+    {
+        _contract["paths"]!["/orders"]!["get"]!["x-pending"] = false;
+
+        OpenApiContractComparer.PendingOperations(_contract).Should().BeEmpty();
+    }
+
     [Fact]
     public void All_divergences_are_listed_not_only_the_first()
     {

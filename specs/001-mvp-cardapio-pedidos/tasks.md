@@ -842,7 +842,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 ## Phase 8: Polish & cross-cutting
 
 - [X] T089 [P] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Isolation/CrossTenantSweepTests.cs` (SC-005), um teste parametrizado. Com A e B cadastrados e dados completos (cardápio, pedido, staff), percorre **todas** as operações autenticadas do contrato que recebem id, usando ids de A e token de B, e espera 404 (ou 403 para papel). Confere também que as listagens de B não contêm ids de A.
-- [ ] T090 [TEST-BACK] Adicionar em `backend/tests/EasyMenu.IntegrationTests/Contract/OpenApiContractTests.cs` um teste que falha se restar qualquer `x-pending: true` em `/contracts/openapi.yaml` (fechamento do MVP) (depende de: todas as tarefas IMPL-BACK).
+- [X] T090 [TEST-BACK] Adicionar em `backend/tests/EasyMenu.IntegrationTests/Contract/OpenApiContractTests.cs` um teste que falha se restar qualquer `x-pending: true` em `/contracts/openapi.yaml` (fechamento do MVP) (depende de: todas as tarefas IMPL-BACK).
 - [X] T091 [P] [TEST-FRONT] `frontend/e2e/mobile-360.spec.ts` (SC-008): viewport 360×740 em `/m/{slug}`, no carrinho e em `/pedido/{token}`; sem scroll horizontal (`scrollWidth <= clientWidth`); botões com alvo ≥ 44 px de altura.
 - [X] T092 [IMPL-FRONT] Ajustes responsivos em `frontend/src/styles.scss` e nos SCSS das páginas públicas até T091 ficar verde (depende de: T091).
 - [X] T093 [IMPL-BACK] Revisar os logs: nenhum log de senha, token ou `PublicToken` completo. Configurar `Serilog`? **Não** (YAGNI): ajustar apenas os níveis em `appsettings.json` e mascarar o token no log de requests, se houver (depende de: T082).

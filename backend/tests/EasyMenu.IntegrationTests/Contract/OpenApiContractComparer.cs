@@ -63,6 +63,10 @@ public static class OpenApiContractComparer
         return divergences;
     }
 
+    /// <summary>"METHOD /path" of every contract operation still marked <c>x-pending: true</c> (sorted).</summary>
+    public static IReadOnlyList<string> PendingOperations(JsonObject contract) =>
+        ReadOperations(contract).Where(kv => IsPending(kv.Value.Operation)).Select(kv => kv.Key).ToList();
+
     private sealed record OperationRef(JsonObject PathItem, JsonObject Operation);
 
     private static SortedDictionary<string, OperationRef> ReadOperations(JsonObject document)
@@ -92,8 +96,11 @@ public static class OpenApiContractComparer
         return result;
     }
 
+    // Also accepts a quoted "true" so a YAML quoting slip cannot hide a pending operation.
     private static bool IsPending(JsonObject operation) =>
-        operation[PendingExtension] is JsonValue v && v.TryGetValue<bool>(out var pending) && pending;
+        operation[PendingExtension] is JsonValue v
+        && ((v.TryGetValue<bool>(out var pending) && pending)
+            || (v.TryGetValue<string>(out var text) && bool.TryParse(text, out var parsed) && parsed));
 
     private sealed class OperationComparison(
         JsonObject contractDoc, JsonObject generatedDoc, string operationKey, List<string> divergences)
