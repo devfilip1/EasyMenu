@@ -660,14 +660,14 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
 
 ### Fatia 3c: Painel (front)
 
-- [ ] T064 [P] [US3] [TEST-FRONT] `frontend/src/app/core/realtime/kitchen-realtime.service.spec.ts`, com fake de `HubConnection` via token `HUB_CONNECTION_FACTORY`:
+- [X] T064 [P] [US3] [TEST-FRONT] `frontend/src/app/core/realtime/kitchen-realtime.service.spec.ts`, com fake de `HubConnection` via token `HUB_CONNECTION_FACTORY`:
   - `connect()` usa `/hubs/kitchen` e `accessTokenFactory` do `AuthStore`;
   - registra `OrderCreated`/`OrderUpdated`/`OrderPickedUp` e os expõe como Observable;
   - emite `resync$` no start e em `onreconnected`;
   - `disconnect()` faz stop;
   - quando a conexão fecha com erro, expõe o estado `disconnected`.
 - [ ] T065 [US3] [IMPL-FRONT] `frontend/src/app/core/realtime/{hub-connection.factory.ts,kitchen-realtime.service.ts}` (`withAutomaticReconnect`) (depende de: T064). T064 verde.
-- [ ] T066 [P] [US3] [TEST-FRONT] `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
+- [X] T066 [P] [US3] [TEST-FRONT] `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
   - no `resync$` chama `listKitchenOrders`;
   - a seção "Bar" mostra só as partes `bar` e a seção "Cozinha" só as `kitchen`, do mais antigo ao mais novo;
   - o cartão mostra o código, o nome do cliente como texto, o horário e os itens × quantidade;
@@ -678,9 +678,9 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
   - 409 mostra um aviso e chama resync;
   - indicador "Reconectando…" quando `disconnected`.
 - [ ] T067 [US3] [IMPL-FRONT] `frontend/src/app/features/kitchen/{kitchen.page.ts,kitchen-order-card.component.ts}` (depende de: T065, T066). T066 verde.
-- [ ] T068 [US3] [TEST-FRONT] `frontend/e2e/support/api.ts`: adicionar `loginAs(page, session)`, que grava a sessão no `localStorage` antes da navegação (depende de: T017).
-- [ ] T069 [US3] [TEST-FRONT] `frontend/e2e/support/fixtures.ts` (depende de: T068): `test` estendido do Playwright com as fixtures `seeded`, que cadastra o Dono e o cardápio padrão e devolve slug, token e ids, e `ownerPage`, uma página já autenticada como Dono. O painel usa o **Dono** (FR-033a), para a US3 não depender da US5. É usado por T070, T078 e T088.
-- [ ] T070 [US3] [TEST-FRONT] `frontend/e2e/us3-kitchen.spec.ts` (depende de: T069). Fluxo:
+- [X] T068 [US3] [TEST-FRONT] `frontend/e2e/support/api.ts`: adicionar `loginAs(page, session)`, que grava a sessão no `localStorage` antes da navegação (depende de: T017).
+- [X] T069 [US3] [TEST-FRONT] `frontend/e2e/support/fixtures.ts` (depende de: T068): `test` estendido do Playwright com as fixtures `seeded`, que cadastra o Dono e o cardápio padrão e devolve slug, token e ids, e `ownerPage`, uma página já autenticada como Dono. O painel usa o **Dono** (FR-033a), para a US3 não depender da US5. É usado por T070, T078 e T088.
+- [X] T070 [US3] [TEST-FRONT] `frontend/e2e/us3-kitchen.spec.ts` (depende de: T069). Fluxo:
   - contexto A (Dono em `/cozinha`) e contexto B (consumidor);
   - B compra Caipirinha + Batata;
   - em ≤ 5 s, A vê o pedido em Bar (só Caipirinha) e em Cozinha (só Batata);
