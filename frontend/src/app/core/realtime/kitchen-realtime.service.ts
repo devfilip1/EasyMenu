@@ -73,6 +73,9 @@ export class KitchenRealtimeService {
     } catch {
       if (this.connection !== connection) return;
       this.currentState.set('disconnected');
+      // REST fallback while the hub is down: the page reloads the board, and a revoked session
+      // (401 on the hub's negotiate, which bypasses HttpClient) is caught by the auth interceptor.
+      this.resync.next();
       this.retryTimer = setTimeout(() => void this.start(connection), START_RETRY_MS);
       return;
     }
