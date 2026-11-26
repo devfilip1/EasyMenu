@@ -64,9 +64,13 @@ export function problemMessage(code: ErrorCode | null | undefined): string {
   return (code && MESSAGES[code]) || GENERIC_MESSAGE;
 }
 
-/** Code of any error thrown by an API call (non-HTTP errors give `null`). */
-export function errorCode(error: unknown): ErrorCode | null {
-  return error instanceof HttpErrorResponse ? problemCode(error) : null;
+/**
+ * Code of any error thrown by an API call (non-HTTP errors give `null`). `notFound` is used for
+ * a 404 without a ProblemDetails body (e.g. answered by a proxy).
+ */
+export function errorCode(error: unknown, notFound?: ErrorCode): ErrorCode | null {
+  if (!(error instanceof HttpErrorResponse)) return null;
+  return problemCode(error) ?? (error.status === 404 && notFound ? notFound : null);
 }
 
 /** Value of a ProblemDetails extension (e.g. `unavailableItems`), or `undefined`. */

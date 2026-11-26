@@ -166,7 +166,7 @@ export class PublicMenuPage {
       this.menu.set(menu);
       this.cart.syncWithMenu(menu);
     } catch (err) {
-      this.error.set(problemMessage(errorCode(err)));
+      this.error.set(problemMessage(errorCode(err, 'establishment_not_found')));
     }
   }
 }

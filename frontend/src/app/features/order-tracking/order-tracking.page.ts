@@ -143,7 +143,7 @@ export class OrderTrackingPage {
     try {
       this.order.set(await this.api.invoke(getPublicOrder, { publicToken }));
     } catch (err) {
-      this.error.set(problemMessage(errorCode(err)));
+      this.error.set(problemMessage(errorCode(err, 'order_not_found')));
     }
   }
 }
