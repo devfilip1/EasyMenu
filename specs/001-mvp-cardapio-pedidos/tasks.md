@@ -738,7 +738,7 @@ recarregar, junto com o aviso de retirada.
   - a 3ª chamada de `SubscribeToOrder` na janela, mesmo com token válido, lança `HubException` com mensagem exatamente `rate_limited`;
   - a conexão continua `Connected`;
   - eventos de pedidos já inscritos continuam chegando.
-- [ ] T101 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Realtime/HubMethodRateLimitFilter.cs` (`IHubFilter` com `PartitionedRateLimiter` por IP, política `order-subscribe`, aplicado só a `OrdersHub.SubscribeToOrder`) e registro em `AddSignalR().AddHubOptions<OrdersHub>(o => o.AddFilter<…>())` (depende de: T072, T095, T100). T100 verde.
+- [X] T101 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Realtime/HubMethodRateLimitFilter.cs` (`IHubFilter` com `PartitionedRateLimiter` por IP, política `order-subscribe`, aplicado só a `OrdersHub.SubscribeToOrder`) e registro em `AddSignalR().AddHubOptions<OrdersHub>(o => o.AddFilter<…>())` (depende de: T072, T095, T100). T100 verde.
 - [X] T073 [P] [US4] [TEST-FRONT] `frontend/src/app/core/realtime/order-realtime.service.spec.ts` (fake de `HubConnection`):
   - `watch(publicToken)` conecta anônimo em `/hubs/orders` e invoca `SubscribeToOrder`;
   - repete a inscrição e emite resync em `onreconnected`;
