@@ -152,7 +152,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
 ### Frontend — testes (vermelhos)
 
-- [ ] T016 [P] [TEST-FRONT] Specs do núcleo (depende de: T004):
+- [X] T016 [P] [TEST-FRONT] Specs do núcleo (depende de: T004):
   - `frontend/src/app/core/auth/auth.store.spec.ts`:
     - `setSession` grava token e usuário no `localStorage`;
     - `restore()` reidrata, e token expirado (`expiresAt` passado) é tratado como deslogado;
@@ -169,7 +169,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - `frontend/src/app/shared/brl.pipe.spec.ts`: 1990 → `R$ 19,90`, 0 → `R$ 0,00`, 1000000 → `R$ 10.000,00`.
   - `media-url.pipe.spec.ts`: URL relativa prefixada com `apiUrl`; `undefined` → `/images/placeholder-item.svg`.
   - `frontend/src/app/core/errors/problem.spec.ts`: `problemCode(HttpErrorResponse)` extrai `code`; `problemMessage(code)` devolve a mensagem pt-BR de cada `ErrorCode` do contrato.
-- [ ] T017 [TEST-FRONT] Infra de E2E (depende de: T004):
+- [X] T017 [TEST-FRONT] Infra de E2E (depende de: T004):
   - `frontend/playwright.config.ts` com `webServer` duplo: a API (`dotnet run --project ../backend/src/EasyMenu.Api --launch-profile http`, url `http://localhost:5080/health`) e o `ng serve`;
   - `frontend/e2e/support/api.ts` com `registerOwner`, `createCategory`, `createItem`, `placeOrder` e `login` via `request` do Playwright, gerando slug/e-mail únicos por teste;
   - job `e2e` em `.github/workflows/ci.yml` com service `postgres:17` + .NET + Node;
