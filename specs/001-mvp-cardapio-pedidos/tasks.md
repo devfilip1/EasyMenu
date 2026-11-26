@@ -847,7 +847,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
     - `/pedido/{token}` atualiza o status em ≤ 5 s após avançar a parte pela API, o que prova o WebSocket de `/hubs` pelo proxy;
     - zero violações de CSP.
   - No job `frontend-prod-headers` de `.github/workflows/ci.yml`: `docker run` com `--add-host=host.docker.internal:host-gateway -e API_UPSTREAM=http://host.docker.internal:5080`, sem `API_ORIGIN` e sem `Cors__AllowedOrigins__0=http://localhost:8080`.
-- [ ] T117 [IMPL-FRONT] Proxy reverso no front (depende de: T105, T116). T116 verde.
+- [X] T117 [IMPL-FRONT] Proxy reverso no front (depende de: T105, T116). T116 verde.
   - Em `frontend/nginx/default.conf.template`:
     - `location /api/`, `/hubs/` (`proxy_http_version 1.1`, `Upgrade`/`Connection`, `proxy_read_timeout 1h`) e `/media/` com `proxy_pass ${API_UPSTREAM}`;
     - `X-Forwarded-For`/`X-Forwarded-Proto`;
