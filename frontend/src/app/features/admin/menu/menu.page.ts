@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 @Component({
-  selector: 'app-admin-page',
+  selector: 'app-menu-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `<h1>Painel do estabelecimento</h1>`,
+  template: `<h2>Cardápio</h2>`,
 })
-export class AdminPage {}
+export class MenuPage {}

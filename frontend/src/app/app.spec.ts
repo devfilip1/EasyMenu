@@ -19,7 +19,14 @@ describe('App', () => {
   it('should declare the skeleton routes', () => {
     const paths = routes.map((r) => r.path);
     expect(paths).toEqual(
-      expect.arrayContaining(['m/:slug', 'pedido/:id', 'admin', 'cozinha', 'login']),
+      expect.arrayContaining([
+        'm/:slug',
+        'pedido/:publicToken',
+        'admin',
+        'cozinha',
+        'login',
+        'cadastro',
+      ]),
     );
   });
 });

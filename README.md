@@ -14,7 +14,7 @@ backend/                     ASP.NET Core Web API (.NET 10) — solution EasyMen
   tests/EasyMenu.UnitTests         xUnit + FluentAssertions
   tests/EasyMenu.IntegrationTests  WebApplicationFactory + Testcontainers (PostgreSQL 17)
 frontend/                    Angular 22 (standalone, signals, SCSS, sem SSR)
-  src/app/pages/               páginas por rota (lazy loading)
+  src/app/features/            páginas por feature (lazy loading)
   src/app/api/generated/       client gerado do contrato (NÃO versionado)
   e2e/                         testes Playwright
 contracts/openapi.yaml       contrato da API (fonte da verdade; dono: Arquiteto)
@@ -40,7 +40,7 @@ npm install
 npm start                       # http://localhost:4200 (gera o client da API antes de subir)
 ```
 
-Rotas do front: `/m/:slug` (cardápio público), `/pedido/:id`, `/admin`, `/cozinha`, `/login`.
+Rotas do front: `/m/:slug` (cardápio público), `/pedido/:publicToken`, `/admin` (`/admin/cardapio`, `/admin/equipe`, `/admin/pedidos`, `/admin/pedidos/:orderId`, `/admin/estabelecimento`), `/cozinha`, `/login`, `/cadastro`.
 
 ## Testes
 

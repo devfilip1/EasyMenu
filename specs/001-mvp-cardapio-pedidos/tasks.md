@@ -61,7 +61,7 @@ tarefa `[TEST-*]` anterior.
   - `Storage:ImagesPath` (`data/uploads`) e `Storage:MaxImageBytes` (5242880).
   Adicionar `backend/src/EasyMenu.Api/data/` ao `.gitignore` da raiz.
 - [ ] T003 [P] [TEST-BACK] Adicionar `Microsoft.AspNetCore.SignalR.Client` 10.0.x e `Microsoft.Extensions.TimeProvider.Testing` 10.0.x em `backend/tests/EasyMenu.IntegrationTests/EasyMenu.IntegrationTests.csproj`, e `Microsoft.Extensions.TimeProvider.Testing` em `backend/tests/EasyMenu.UnitTests/EasyMenu.UnitTests.csproj`. `dotnet test` verde.
-- [ ] T004 [P] [IMPL-FRONT] Estrutura e rotas do front:
+- [X] T004 [P] [IMPL-FRONT] Estrutura e rotas do front:
   - instalar `@microsoft/signalr`;
   - mover as páginas-esqueleto de `frontend/src/app/pages/*` para `frontend/src/app/features/{public-menu,order-tracking,admin,kitchen,auth}/`, com `login.page.ts` em `features/auth`;
   - criar o esqueleto `features/auth/register.page.ts` e as rotas `/cadastro`, `/admin/cardapio`, `/admin/equipe`, `/admin/pedidos`, `/admin/pedidos/:orderId` e `/admin/estabelecimento` (componentes vazios) em `frontend/src/app/app.routes.ts`, com `/pedido/:publicToken` no lugar de `/pedido/:id`;
