@@ -1,0 +1,42 @@
+{
+  "name": "easymenu-frontend",
+  "version": "0.0.0",
+  "scripts": {
+    "ng": "ng",
+    "generate:api": "ng-openapi-gen --config ng-openapi-gen.json",
+    "prestart": "npm run generate:api",
+    "start": "ng serve",
+    "prebuild": "npm run generate:api",
+    "build": "ng build",
+    "watch": "ng build --watch --configuration development",
+    "pretest": "npm run generate:api",
+    "test": "ng test --watch=false",
+    "test:watch": "ng test",
+    "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium"
+  },
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "dependencies": {
+    "@angular/common": "^22.3.0",
+    "@angular/compiler": "^22.3.0",
+    "@angular/core": "^22.3.0",
+    "@angular/forms": "^22.3.0",
+    "@angular/platform-browser": "^22.3.0",
+    "@angular/router": "^22.3.0",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.3.0",
+    "@angular/cli": "^22.3.0",
+    "@angular/compiler-cli": "^22.3.0",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^24.19.4",
+    "jsdom": "^31.0.0",
+    "ng-openapi-gen": "^1.1.0",
+    "prettier": "^3.8.1",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.0"
+  }
+}
