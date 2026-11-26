@@ -281,8 +281,8 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1d: Foto (back)
 
-- [ ] T027 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Application/Menu/ImageFormatTests.cs`: detecta JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`) e WebP (`RIFF....WEBP`) pelos bytes; GIF, texto e arquivo vazio dão `null`.
-- [ ] T028 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemPhotoTests.cs` (depende de: T025):
+- [X] T027 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Application/Menu/ImageFormatTests.cs`: detecta JPEG (`FF D8 FF`), PNG (`89 50 4E 47 0D 0A 1A 0A`) e WebP (`RIFF....WEBP`) pelos bytes; GIF, texto e arquivo vazio dão `null`.
+- [X] T028 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemPhotoTests.cs` (depende de: T025):
   - upload de JPEG dá 200 com `photoUrl` `/media/{establishmentId}/…jpg`, e `GET photoUrl` dá 200 `image/jpeg`;
   - um novo upload substitui a foto e o arquivo antigo some do disco;
   - arquivo entre 5 e 6 MB dá **413** `image_too_large`;
