@@ -8,4 +8,6 @@ public static class ErrorCodes
     public const string EmailTaken = "email_taken";
     public const string SlugTaken = "slug_taken";
     public const string NotFound = "not_found";
+    public const string Unauthorized = "unauthorized";
+    public const string Forbidden = "forbidden";
 }

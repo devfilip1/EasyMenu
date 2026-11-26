@@ -45,6 +45,8 @@ public static class AuthenticationSetup
                 {
                     OnMessageReceived = ReadHubAccessToken,
                     OnTokenValidated = SecurityStampValidator.ValidateAsync,
+                    OnChallenge = AuthProblemEvents.OnChallenge,
+                    OnForbidden = AuthProblemEvents.OnForbidden,
                 };
             });
 

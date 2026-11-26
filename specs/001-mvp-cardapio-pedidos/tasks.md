@@ -230,7 +230,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - o mesmo vale para token adulterado, expirado (`Factory.Clock`) e de usuário desativado;
   - token de **kitchen** num endpoint `OwnerOnly` dá 403 `code=forbidden` (usar um controller de teste em `WithTestControllers`, ao lado de `ErrorTestController`, com `[Authorize(Policy = "OwnerOnly")]`);
   - `POST /api/auth/login` com senha errada continua 401 `invalid_credentials` (não `unauthorized`);
-- [ ] T107 [IMPL-BACK] Corpo de 401/403 (depende de: T013, T014, T106). T106 e `OpenApiContractTests` verdes.
+- [X] T107 [IMPL-BACK] Corpo de 401/403 (depende de: T013, T014, T106). T106 e `OpenApiContractTests` verdes.
   - `backend/src/EasyMenu.Api/Auth/AuthProblemEvents.cs`: `OnChallenge` (`HandleResponse`, `ApiProblem` 401 `unauthorized`, mantém `WWW-Authenticate`) e `OnForbidden` (`ApiProblem` 403 `forbidden`), registrados em `AddJwtBearer`;
   - `unauthorized`/`forbidden` em `EasyMenu.Application/Common/ErrorCodes.cs` e no enum de `code` exposto no OpenAPI gerado.
 - [X] T108 [P] [TEST-FRONT] (depende de: T016):
