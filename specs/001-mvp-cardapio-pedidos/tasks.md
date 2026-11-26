@@ -565,7 +565,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - 404 mostra "Estabelecimento não encontrado";
   - `categories: []` mostra "Cardápio indisponível no momento";
   - nome e descrição com `<script>` aparecem como texto.
-- [ ] T053 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/{public-menu.page.ts,menu-item-card.component.ts}` (mobile-first) (depende de: T051, T052). T052 verde.
+- [X] T053 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/{public-menu.page.ts,menu-item-card.component.ts}` (mobile-first) (depende de: T051, T052). T052 verde.
 
 ### Fatia 2d: Checkout e página do pedido (front)
 
