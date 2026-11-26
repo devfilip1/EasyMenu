@@ -159,6 +159,62 @@ public sealed class MenuItemTests
         act.Should().Throw<DomainException>().Which.Code.Should().Be("validation_failed");
     }
 
+    // ------------------------------------------------------------------ description normalization (T124)
+
+    [Fact]
+    public void Description_is_trimmed()
+    {
+        NewItem(description: "  Gelada  ").Description.Should().Be("Gelada");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Blank_description_becomes_null(string? description)
+    {
+        NewItem(description: description).Description.Should().BeNull();
+    }
+
+    [Fact]
+    public void Update_trims_the_description()
+    {
+        var item = NewItem();
+
+        item.Update(CategoryId, "Caipirinha", "  Gelada  ", 2500, null, true, Station.Bar);
+
+        item.Description.Should().Be("Gelada");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Update_with_blank_description_sets_null(string? description)
+    {
+        var item = NewItem(description: "Limão e cachaça");
+
+        item.Update(CategoryId, "Caipirinha", description, 2500, null, true, Station.Bar);
+
+        item.Description.Should().BeNull();
+    }
+
+    [Fact]
+    public void Description_limit_applies_after_trim()
+    {
+        var description = new string('d', 500);
+
+        NewItem(description: $"   {description}   ").Description.Should().Be(description);
+    }
+
+    [Fact]
+    public void Description_limit_after_trim_still_rejects_five_hundred_and_one_characters()
+    {
+        var act = () => NewItem(description: $"  {new string('d', 501)}  ");
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("validation_failed");
+    }
+
     // ------------------------------------------------------------------ update
 
     [Fact]

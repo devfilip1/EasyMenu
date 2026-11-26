@@ -465,7 +465,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - `CategoryConfiguration`: `HasAlternateKey(c => new { c.EstablishmentId, c.Id })`;
   - `MenuItemConfiguration`: `HasOne<Category>().WithMany().HasForeignKey(i => new { i.EstablishmentId, i.CategoryId }).HasPrincipalKey(c => new { c.EstablishmentId, c.Id }).OnDelete(Restrict)`, no lugar da FK simples;
   - migration `CompositeTenantForeignKeys` em `backend/src/EasyMenu.Infrastructure/Persistence/Migrations/`.
-- [ ] T124 [P] [US1] [TEST-BACK] `MenuItem.Description` normalizada (depende de: T024).
+- [X] T124 [P] [US1] [TEST-BACK] `MenuItem.Description` normalizada (depende de: T024).
   - Ampliar `backend/tests/EasyMenu.UnitTests/Domain/Menu/MenuItemTests.cs`: `"  Gelada  "` vira `"Gelada"`; `""`, `"   "` e `null` viram `null`, tanto na criação quanto em `Update`; o limite de 500 caracteres vale **após** o trim.
   - Ampliar `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemsEndpointsTests.cs`: `POST` com `description: "   "` dá 201 sem a propriedade `description` no JSON.
 - [ ] T125 [US1] [IMPL-BACK] Normalização de `Description` em `backend/src/EasyMenu.Domain/Menu/MenuItem.cs` (criação e `Update`) (depende de: T026, T124). T124 verde.

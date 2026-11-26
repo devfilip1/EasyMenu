@@ -40,6 +40,32 @@ public sealed class MenuItemsEndpointsTests(EasyMenuApiFactory factory) : Integr
     }
 
     [Fact]
+    public async Task Blank_description_is_stored_as_null_and_omitted_from_the_json()
+    {
+        var owner = await Api.RegisterOwnerAsync();
+        var menu = await Api.CreateMenuAsync(owner.Token);
+
+        var response = await Api.CreateClient(owner.Token).PostAsJsonAsync(Route,
+            new MenuItemRequest(menu.Drinks.Id, "Gin", "   ", 3200, null, true, "bar"), ApiDriver.Json);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync());
+        var body = await response.Content.ReadAsStringAsync();
+        using var doc = System.Text.Json.JsonDocument.Parse(body);
+        doc.RootElement.TryGetProperty("description", out _).Should().BeFalse("a blank description becomes null and nulls are omitted: {0}", body);
+    }
+
+    [Fact]
+    public async Task Description_is_trimmed()
+    {
+        var owner = await Api.RegisterOwnerAsync();
+        var menu = await Api.CreateMenuAsync(owner.Token);
+
+        var item = await Api.CreateMenuItemAsync(owner.Token, menu.Drinks.Id, "Chopp escuro", 1500, station: "bar", description: "  Gelada  ");
+
+        item.Description.Should().Be("Gelada");
+    }
+
+    [Fact]
     public async Task Default_menu_has_the_expected_effective_prices_and_positions()
     {
         var owner = await Api.RegisterOwnerAsync();
