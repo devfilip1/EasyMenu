@@ -34,7 +34,7 @@ public static class RateLimitingSetup
             var orderSubscribe = ReadWindow(configuration, "OrderSubscribe");
 
             options.AddPolicy(AuthPolicy, context =>
-                RateLimitPartition.GetFixedWindowLimiter($"{ClientIp(context)}|{context.Request.Path}", _ => auth));
+                RateLimitPartition.GetFixedWindowLimiter($"{ClientIp(context)}|{EndpointKey(context)}", _ => auth));
             options.AddPolicy(CheckoutPolicy, context =>
                 RateLimitPartition.GetFixedWindowLimiter(ClientIp(context), _ => checkout));
             options.AddPolicy(OrderSubscribePolicy, context =>
@@ -62,6 +62,16 @@ public static class RateLimitingSetup
             QueueLimit = 0,
             AutoReplenishment = true,
         };
+    }
+
+    /// <summary>
+    /// The routed endpoint (so case or trailing-slash variations of a path share one bucket), falling back to the
+    /// request path in lower case without a trailing slash.
+    /// </summary>
+    public static string EndpointKey(HttpContext context)
+    {
+        var pattern = (context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText ?? context.Request.Path.Value ?? string.Empty;
+        return pattern.Trim('/').ToLowerInvariant();
     }
 
     public static string ClientIp(HttpContext context) =>

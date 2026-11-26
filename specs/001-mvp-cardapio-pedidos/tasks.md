@@ -250,7 +250,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - 2 chamadas a `POST /api/auth/login` seguidas de `POST /api/auth/LOGIN` dão 429 (mesmo balde);
   - idem com `/api/auth/Login/` (barra final);
   - `/api/auth/REGISTER-OWNER` cai no balde do register, não no do login (as partições por endpoint continuam separadas).
-- [ ] T115 [IMPL-BACK] Chave da política `auth` em `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` passa a usar o endpoint roteado (`(context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText`), com fallback para `Request.Path` em minúsculas e sem barra final (depende de: T095, T114). T114 verde.
+- [X] T115 [IMPL-BACK] Chave da política `auth` em `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` passa a usar o endpoint roteado (`(context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText`), com fallback para `Request.Path` em minúsculas e sem barra final (depende de: T095, T114). T114 verde.
 
 ### ForwardedHeaders (obrigatório antes de qualquer deploy; R14/R18)
 
