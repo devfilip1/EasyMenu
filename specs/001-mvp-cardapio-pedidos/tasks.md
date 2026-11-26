@@ -55,8 +55,8 @@ tarefa `[TEST-*]` anterior.
 
 **Purpose**: pacotes e configuração, sem lógica de negócio (não exigem teste).
 
-- [ ] T001 [P] [IMPL-BACK] Adicionar os pacotes: `Microsoft.EntityFrameworkCore` 10.0.x em `backend/src/EasyMenu.Application/EasyMenu.Application.csproj`; `EFCore.NamingConventions` 10.0.1 e `Microsoft.Extensions.Identity.Core` 10.0.x em `backend/src/EasyMenu.Infrastructure/EasyMenu.Infrastructure.csproj`; `Microsoft.AspNetCore.Authentication.JwtBearer` 10.0.x em `backend/src/EasyMenu.Api/EasyMenu.Api.csproj`. Criar o tool manifest `backend/.config/dotnet-tools.json` com `dotnet-ef` 10.0.x. `dotnet build` verde.
-- [ ] T002 [P] [IMPL-BACK] Configuração em `backend/src/EasyMenu.Api/appsettings.json` e `appsettings.Development.json`:
+- [X] T001 [P] [IMPL-BACK] Adicionar os pacotes: `Microsoft.EntityFrameworkCore` 10.0.x em `backend/src/EasyMenu.Application/EasyMenu.Application.csproj`; `EFCore.NamingConventions` 10.0.1 e `Microsoft.Extensions.Identity.Core` 10.0.x em `backend/src/EasyMenu.Infrastructure/EasyMenu.Infrastructure.csproj`; `Microsoft.AspNetCore.Authentication.JwtBearer` 10.0.x em `backend/src/EasyMenu.Api/EasyMenu.Api.csproj`. Criar o tool manifest `backend/.config/dotnet-tools.json` com `dotnet-ef` 10.0.x. `dotnet build` verde.
+- [X] T002 [P] [IMPL-BACK] Configuração em `backend/src/EasyMenu.Api/appsettings.json` e `appsettings.Development.json`:
   - `Jwt` (`Issuer`, `Audience`, `SigningKey` ≥ 32 bytes, com valor apenas de dev em Development, e `ExpiresMinutes: 480`);
   - `Storage:ImagesPath` (`data/uploads`) e `Storage:MaxImageBytes` (5242880).
   Adicionar `backend/src/EasyMenu.Api/data/` ao `.gitignore` da raiz.
