@@ -1,35 +1,757 @@
 openapi: 3.1.0
 info:
   title: EasyMenu API
-  version: 0.1.0
+  version: 1.0.0
   description: |
-    Contrato da API do EasyMenu (fonte da verdade backend <-> frontend).
-    Dono: agente Arquiteto. Valores monetários são inteiros em centavos (BRL).
+    Contrato da API do EasyMenu, fonte da verdade da comunicação backend <-> frontend
+    (constituição, princípio II). Dono: agente Arquiteto. Para mudar o contrato, peça ao Arquiteto.
+
+    Convenções:
+    - Valores monetários são inteiros em **centavos de BRL** (campos com sufixo `Cents`).
+    - Enums são strings em snake_case minúsculo.
+    - Datas seguem ISO 8601 em UTC.
+    - Erros usam `application/problem+json` (RFC 7807) com a extensão `code` (ver `ErrorCode`).
+    - Endpoints autenticados usam `Authorization: Bearer <jwt>`. Sem token ou com token inválido,
+      desativado ou expirado, a resposta é **401**. Papel sem permissão dá **403**. Recurso de
+      outro estabelecimento dá **404**.
+    - Fotos: `photoUrl` é relativo à raiz da API (ex.: `/media/{establishmentId}/{file}.jpg`).
+    - Eventos em tempo real (SignalR) estão em `contracts/realtime.md`.
 servers:
   - url: http://localhost:5080
     description: Desenvolvimento local
 tags:
   - name: Health
+  - name: Auth
+  - name: Establishment
+  - name: Categories
+  - name: MenuItems
+  - name: PublicMenu
+  - name: PublicOrders
+  - name: Kitchen
+  - name: Orders
+  - name: Staff
+security:
+  - bearerAuth: []
+
 paths:
   /health:
     get:
       tags: [Health]
       operationId: getHealth
       summary: Verifica se a API e o banco de dados estão disponíveis.
+      security: []
       responses:
         "200":
           description: API e banco disponíveis.
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/HealthResponse"
+              schema: { $ref: "#/components/schemas/HealthResponse" }
         "503":
           description: Banco de dados indisponível.
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthResponse" }
+
+  # ---------------------------------------------------------------- Auth
+  /api/auth/register-owner:
+    post:
+      x-pending: true
+      tags: [Auth]
+      operationId: registerOwner
+      summary: Cria a conta de Dono e o estabelecimento numa única operação (FR-001..FR-003).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegisterOwnerRequest" }
+      responses:
+        "201":
+          description: Conta e estabelecimento criados; o usuário já sai autenticado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "409":
+          description: "`slug_taken` ou `email_taken`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/auth/login:
+    post:
+      x-pending: true
+      tags: [Auth]
+      operationId: login
+      summary: Login de Dono ou Cozinha com e-mail e senha (FR-004).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Autenticado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401":
+          description: "`invalid_credentials`: e-mail inexistente, senha errada ou conta desativada (mesma resposta para os três casos)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/auth/me:
+    get:
+      x-pending: true
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: Dados do usuário autenticado e do seu estabelecimento.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ---------------------------------------------------------------- Establishment
+  /api/establishment:
+    get:
+      x-pending: true
+      tags: [Establishment]
+      operationId: getEstablishment
+      summary: Estabelecimento do Dono autenticado.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      x-pending: true
+      tags: [Establishment]
+      operationId: updateEstablishment
+      summary: Altera o nome do estabelecimento; o slug é imutável (FR-003, FR-005).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateEstablishmentRequest" }
+      responses:
+        "200":
+          description: Atualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Establishment" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------------------------- Categories (Owner)
+  /api/categories:
+    get:
+      x-pending: true
+      tags: [Categories]
+      operationId: listCategories
+      summary: Categorias do estabelecimento, na ordem definida.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthResponse"
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      x-pending: true
+      tags: [Categories]
+      operationId: createCategory
+      summary: Cria categoria no fim da lista.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryRequest" }
+      responses:
+        "201":
+          description: Criada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/categories/order:
+    put:
+      x-pending: true
+      tags: [Categories]
+      operationId: reorderCategories
+      summary: Define a ordem das categorias; precisa conter todos os ids, sem repetição.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReorderRequest" }
+      responses:
+        "204": { description: Reordenadas. }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      x-pending: true
+      tags: [Categories]
+      operationId: renameCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CategoryRequest" }
+      responses:
+        "200":
+          description: Renomeada.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      x-pending: true
+      tags: [Categories]
+      operationId: deleteCategory
+      summary: Remove categoria vazia (FR-006).
+      responses:
+        "204": { description: Removida. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`category_not_empty`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/categories/{id}/items/order:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      x-pending: true
+      tags: [Categories]
+      operationId: reorderCategoryItems
+      summary: Define a ordem dos itens da categoria (FR-011); precisa conter todos os ids de itens da categoria.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReorderRequest" }
+      responses:
+        "204": { description: Reordenados. }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Menu items (Owner)
+  /api/menu-items:
+    get:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: listMenuItems
+      summary: Itens do estabelecimento ordenados por categoria e posição (inclui esgotados).
+      parameters:
+        - name: categoryId
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MenuItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: createMenuItem
+      summary: Cria item no fim da categoria (a foto é enviada depois, em /photo).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MenuItemRequest" }
+      responses:
+        "201":
+          description: Criado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MenuItem" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: "`category_not_found` (categoria inexistente ou de outro estabelecimento)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/menu-items/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: getMenuItem
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MenuItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: updateMenuItem
+      summary: Atualiza todos os campos; mudar a categoria move o item para o fim da nova categoria.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MenuItemRequest" }
+      responses:
+        "200":
+          description: Atualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MenuItem" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: deleteMenuItem
+      summary: Remove o item (e a foto); pedidos existentes não mudam.
+      responses:
+        "204": { description: Removido. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/menu-items/{id}/availability:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: setMenuItemAvailability
+      summary: Alterna ativo/esgotado (FR-010).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AvailabilityRequest" }
+      responses:
+        "200":
+          description: Atualizado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MenuItem" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/menu-items/{id}/photo:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: uploadMenuItemPhoto
+      summary: Envia/substitui a foto (JPEG, PNG ou WebP, máx. 5 MB).
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Foto salva.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MenuItem" }
+        "400":
+          description: "`invalid_image_type`, `image_too_large` ou arquivo ausente (`validation_failed`)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      x-pending: true
+      tags: [MenuItems]
+      operationId: deleteMenuItemPhoto
+      summary: Remove a foto (o item passa a exibir a imagem padrão).
+      responses:
+        "204": { description: Removida. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Public (anônimo)
+  /api/public/establishments/{slug}/menu:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    get:
+      x-pending: true
+      tags: [PublicMenu]
+      operationId: getPublicMenu
+      summary: Cardápio público (FR-012, FR-013).
+      description: |
+        Categorias na ordem do Dono. Só aparecem as categorias com ao menos um item disponível.
+        Dentro delas vêm todos os itens, e os esgotados aparecem com `isAvailable=false` (o front
+        exibe "Esgotado" e não deixa adicionar). `categories` vazio significa cardápio indisponível.
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicMenu" }
+        "404":
+          description: "`establishment_not_found`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/public/establishments/{slug}/orders:
+    parameters:
+      - $ref: "#/components/parameters/Slug"
+    post:
+      x-pending: true
+      tags: [PublicOrders]
+      operationId: placeOrder
+      summary: Compra (pagamento simulado). O total é calculado no servidor (FR-017..FR-021).
+      description: |
+        Só os campos do schema são considerados; preços e totais enviados pelo cliente são
+        ignorados. Se um mesmo `menuItemId` aparecer mais de uma vez, as quantidades são somadas
+        (a soma precisa ser ≤ 99).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PlaceOrderRequest" }
+      responses:
+        "201":
+          description: Pedido pago. Use `publicToken` para navegar até `/pedido/{publicToken}`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicOrder" }
+        "400":
+          description: "`empty_cart`, `invalid_quantity` ou `validation_failed`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "402":
+          description: "`payment_declined` (nunca ocorre com o gateway simulado)."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "404":
+          description: "`establishment_not_found`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "409":
+          description: "`items_unavailable`: itens esgotados, removidos ou de outro estabelecimento; ver `unavailableItems`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ItemsUnavailableProblem" }
+
+  /api/public/orders/{publicToken}:
+    parameters:
+      - name: publicToken
+        in: path
+        required: true
+        schema: { type: string, minLength: 43, maxLength: 43 }
+    get:
+      x-pending: true
+      tags: [PublicOrders]
+      operationId: getPublicOrder
+      summary: Página do pedido do consumidor (FR-029, FR-031a).
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicOrder" }
+        "404":
+          description: "`order_not_found`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  # ---------------------------------------------------------------- Kitchen (Owner ou Kitchen)
+  /api/kitchen/orders:
+    get:
+      x-pending: true
+      tags: [Kitchen]
+      operationId: listKitchenOrders
+      summary: Pedidos em andamento (status != picked_up), do mais antigo ao mais novo (FR-028).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/KitchenOrder" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/kitchen/orders/{orderId}/parts/{station}/status:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+      - name: station
+        in: path
+        required: true
+        schema: { $ref: "#/components/schemas/Station" }
+    put:
+      x-pending: true
+      tags: [Kitchen]
+      operationId: updateOrderPartStatus
+      summary: Avança o status de uma parte (FR-025). Repetir o status atual é idempotente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdatePartStatusRequest" }
+      responses:
+        "200":
+          description: Atualizado; devolve o pedido inteiro.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KitchenOrder" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404":
+          description: "`not_found`: pedido inexistente, de outro estabelecimento ou sem parte desse setor."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "409":
+          description: "`invalid_status_transition`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/kitchen/orders/{orderId}/pickup:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    put:
+      x-pending: true
+      tags: [Kitchen]
+      operationId: markOrderPickedUp
+      summary: Marca como Retirado; só para pedidos Prontos (FR-027). Idempotente.
+      responses:
+        "200":
+          description: Retirado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/KitchenOrder" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`order_not_ready`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  # ---------------------------------------------------------------- Orders (Owner)
+  /api/orders:
+    get:
+      x-pending: true
+      tags: [Orders]
+      operationId: listOrders
+      summary: Pedidos do estabelecimento, do mais recente ao mais antigo (FR-035).
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/OrderStatus" }
+        - name: page
+          in: query
+          required: false
+          schema: { type: integer, format: int32, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          required: false
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderSummaryPage" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  /api/orders/{orderId}:
+    parameters:
+      - $ref: "#/components/parameters/OrderId"
+    get:
+      x-pending: true
+      tags: [Orders]
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/OrderDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- Staff (Owner)
+  /api/staff:
+    get:
+      x-pending: true
+      tags: [Staff]
+      operationId: listStaff
+      summary: Membros da Cozinha do estabelecimento (ativos e desativados).
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StaffMember" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      x-pending: true
+      tags: [Staff]
+      operationId: createStaffMember
+      summary: Cadastra membro da Cozinha (FR-032).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateStaffMemberRequest" }
+      responses:
+        "201":
+          description: Criado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMember" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409":
+          description: "`email_taken`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  /api/staff/{id}/deactivate:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    put:
+      x-pending: true
+      tags: [Staff]
+      operationId: deactivateStaffMember
+      summary: Desativa a conta e corta o acesso imediatamente, tanto REST quanto SignalR (FR-034). Idempotente.
+      responses:
+        "200":
+          description: Desativado.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StaffMember" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Slug:
+      name: slug
+      in: path
+      required: true
+      schema: { type: string, minLength: 3, maxLength: 50 }
+
+  responses:
+    ValidationError:
+      description: "`validation_failed` (ver `errors`) ou regra de domínio (ver `code`)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+    Unauthorized:
+      description: Token ausente, inválido, expirado ou de conta desativada.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+    Forbidden:
+      description: Papel sem permissão para a operação.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+    NotFound:
+      description: "`not_found`: inexistente ou pertence a outro estabelecimento."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+
   schemas:
     HealthResponse:
       type: object
@@ -38,3 +760,382 @@ components:
         status:
           type: string
           enum: [healthy, unhealthy]
+
+    # ---------- enums
+    Role:
+      type: string
+      enum: [owner, kitchen]
+    Station:
+      type: string
+      enum: [bar, kitchen]
+      description: Setor de preparo.
+    OrderStatus:
+      type: string
+      enum: [paid, in_preparation, ready, picked_up]
+      description: "Derivado das partes (FR-026). paid=nenhuma parte iniciada; in_preparation=alguma iniciada; ready=todas prontas; picked_up=retirado."
+    PartStatus:
+      type: string
+      enum: [received, in_preparation, ready]
+    ErrorCode:
+      type: string
+      description: Valores estáveis da extensão `code` de ProblemDetails.
+      enum:
+        - validation_failed
+        - invalid_credentials
+        - email_taken
+        - slug_taken
+        - invalid_slug
+        - not_found
+        - category_not_found
+        - category_not_empty
+        - invalid_order_list
+        - invalid_price
+        - invalid_promotional_price
+        - invalid_image_type
+        - image_too_large
+        - establishment_not_found
+        - empty_cart
+        - invalid_quantity
+        - items_unavailable
+        - payment_declined
+        - order_not_found
+        - invalid_status_transition
+        - order_not_ready
+
+    # ---------- errors
+    ProblemDetails:
+      type: object
+      required: [status, code]
+      properties:
+        type: { type: [string, "null"] }
+        title: { type: [string, "null"] }
+        status: { type: integer, format: int32 }
+        detail: { type: [string, "null"] }
+        code: { $ref: "#/components/schemas/ErrorCode" }
+        errors:
+          type: [object, "null"]
+          description: Erros de validação por campo (camelCase), presentes quando code = validation_failed.
+          additionalProperties:
+            type: array
+            items: { type: string }
+    ItemsUnavailableProblem:
+      allOf:
+        - $ref: "#/components/schemas/ProblemDetails"
+        - type: object
+          required: [unavailableItems]
+          properties:
+            unavailableItems:
+              type: array
+              items: { $ref: "#/components/schemas/UnavailableItem" }
+    UnavailableItem:
+      type: object
+      required: [menuItemId]
+      properties:
+        menuItemId: { type: string, format: uuid }
+        name:
+          type: [string, "null"]
+          description: Nome atual do item; ausente se o item foi removido.
+
+    # ---------- auth
+    RegisterOwnerRequest:
+      type: object
+      required: [email, password, establishmentName, slug]
+      properties:
+        name: { type: [string, "null"], maxLength: 100, description: Nome do Dono (opcional). }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 100 }
+        establishmentName: { type: string, minLength: 2, maxLength: 100 }
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-z0-9](?:[a-z0-9-]{1,48})[a-z0-9]$"
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, maxLength: 254 }
+        password: { type: string, maxLength: 100 }
+    AuthResponse:
+      type: object
+      required: [accessToken, expiresAt, user]
+      properties:
+        accessToken: { type: string }
+        expiresAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/CurrentUser" }
+    CurrentUser:
+      type: object
+      required: [id, email, role, establishment]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: [string, "null"] }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        establishment: { $ref: "#/components/schemas/Establishment" }
+
+    # ---------- establishment
+    Establishment:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+    UpdateEstablishmentRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+
+    # ---------- categories
+    Category:
+      type: object
+      required: [id, name, position, itemCount]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        position: { type: integer, format: int32 }
+        itemCount: { type: integer, format: int32 }
+    CategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+    ReorderRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          description: Todos os ids, na nova ordem.
+          items: { type: string, format: uuid }
+
+    # ---------- menu items
+    MenuItem:
+      type: object
+      required: [id, categoryId, name, priceCents, effectivePriceCents, isAvailable, station, position]
+      properties:
+        id: { type: string, format: uuid }
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        photoUrl: { type: [string, "null"], description: Relativo à raiz da API; ausente = imagem padrão. }
+        priceCents: { type: integer, format: int64 }
+        promotionalPriceCents: { type: [integer, "null"], format: int64 }
+        effectivePriceCents: { type: integer, format: int64, description: promotionalPriceCents ?? priceCents }
+        isAvailable: { type: boolean }
+        station: { $ref: "#/components/schemas/Station" }
+        position: { type: integer, format: int32 }
+    MenuItemRequest:
+      type: object
+      required: [categoryId, name, priceCents, isAvailable, station]
+      properties:
+        categoryId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: [string, "null"], maxLength: 500 }
+        priceCents: { type: integer, format: int64, minimum: 1, maximum: 10000000 }
+        promotionalPriceCents:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: "Opcional; se presente, precisa ser > 0 e < priceCents (`invalid_promotional_price`)."
+        isAvailable: { type: boolean }
+        station: { $ref: "#/components/schemas/Station" }
+    AvailabilityRequest:
+      type: object
+      required: [isAvailable]
+      properties:
+        isAvailable: { type: boolean }
+
+    # ---------- public menu
+    PublicMenu:
+      type: object
+      required: [establishment, categories]
+      properties:
+        establishment: { $ref: "#/components/schemas/PublicEstablishment" }
+        categories:
+          type: array
+          items: { $ref: "#/components/schemas/PublicCategory" }
+    PublicEstablishment:
+      type: object
+      required: [name, slug]
+      properties:
+        name: { type: string }
+        slug: { type: string }
+    PublicCategory:
+      type: object
+      required: [id, name, items]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/PublicMenuItem" }
+    PublicMenuItem:
+      type: object
+      required: [id, name, priceCents, effectivePriceCents, isAvailable]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        photoUrl: { type: [string, "null"] }
+        priceCents: { type: integer, format: int64 }
+        promotionalPriceCents: { type: [integer, "null"], format: int64 }
+        effectivePriceCents: { type: integer, format: int64 }
+        isAvailable: { type: boolean }
+
+    # ---------- public orders
+    PlaceOrderRequest:
+      type: object
+      required: [items]
+      properties:
+        customerName:
+          type: [string, "null"]
+          maxLength: 60
+          description: Opcional; texto livre exibido com escape.
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/PlaceOrderLine" }
+    PlaceOrderLine:
+      type: object
+      required: [menuItemId, quantity]
+      properties:
+        menuItemId: { type: string, format: uuid }
+        quantity: { type: integer, format: int32, minimum: 1, maximum: 99 }
+    PublicOrder:
+      type: object
+      required: [publicToken, pickupCode, status, totalCents, createdAt, items, establishment]
+      properties:
+        publicToken: { type: string }
+        pickupCode: { type: string, minLength: 4, maxLength: 4 }
+        customerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        totalCents: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        establishment: { $ref: "#/components/schemas/PublicEstablishment" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderLine" }
+    OrderLine:
+      type: object
+      required: [name, unitPriceCents, quantity, subtotalCents]
+      properties:
+        name: { type: string, description: Snapshot do nome na compra. }
+        unitPriceCents: { type: integer, format: int64, description: Snapshot do preço na compra. }
+        quantity: { type: integer, format: int32 }
+        subtotalCents: { type: integer, format: int64 }
+
+    # ---------- kitchen
+    KitchenOrder:
+      type: object
+      required: [id, pickupCode, status, createdAt, parts]
+      properties:
+        id: { type: string, format: uuid }
+        pickupCode: { type: string }
+        customerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        createdAt: { type: string, format: date-time }
+        parts:
+          type: array
+          description: Uma por setor presente no pedido; o front exibe cada parte na seção do seu setor.
+          items: { $ref: "#/components/schemas/KitchenOrderPart" }
+    KitchenOrderPart:
+      type: object
+      required: [station, status, items]
+      properties:
+        station: { $ref: "#/components/schemas/Station" }
+        status: { $ref: "#/components/schemas/PartStatus" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/KitchenOrderItem" }
+    KitchenOrderItem:
+      type: object
+      required: [name, quantity]
+      properties:
+        name: { type: string }
+        quantity: { type: integer, format: int32 }
+    OrderPickedUpEvent:
+      type: object
+      description: Payload do evento SignalR `OrderPickedUp` (ver contracts/realtime.md).
+      required: [id, pickupCode]
+      properties:
+        id: { type: string, format: uuid }
+        pickupCode: { type: string }
+    UpdatePartStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [in_preparation, ready]
+
+    # ---------- admin orders
+    OrderSummary:
+      type: object
+      required: [id, pickupCode, status, totalCents, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        pickupCode: { type: string }
+        customerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        totalCents: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+    OrderSummaryPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderSummary" }
+        page: { type: integer, format: int32 }
+        pageSize: { type: integer, format: int32 }
+        totalCount: { type: integer, format: int32 }
+    OrderDetail:
+      type: object
+      required: [id, pickupCode, status, totalCents, createdAt, items, parts]
+      properties:
+        id: { type: string, format: uuid }
+        pickupCode: { type: string }
+        customerName: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        totalCents: { type: integer, format: int64 }
+        createdAt: { type: string, format: date-time }
+        pickedUpAt: { type: [string, "null"], format: date-time }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/OrderDetailLine" }
+        parts:
+          type: array
+          items: { $ref: "#/components/schemas/OrderPartStatus" }
+    OrderDetailLine:
+      allOf:
+        - $ref: "#/components/schemas/OrderLine"
+        - type: object
+          required: [station]
+          properties:
+            station: { $ref: "#/components/schemas/Station" }
+    OrderPartStatus:
+      type: object
+      required: [station, status]
+      properties:
+        station: { $ref: "#/components/schemas/Station" }
+        status: { $ref: "#/components/schemas/PartStatus" }
+
+    # ---------- staff
+    StaffMember:
+      type: object
+      required: [id, name, email, isActive, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    CreateStaffMemberRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 8, maxLength: 100 }
