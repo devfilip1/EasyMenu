@@ -187,7 +187,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
 ### Rate limiting (pós-revisão, transversal)
 
-- [ ] T094 [TEST-BACK] Rate limiting de auth (depende de: T006, T007). Chaves de configuração: `RateLimiting:{Auth|Checkout|OrderSubscribe}:{PermitLimit|WindowSeconds}`, com padrões 10/60, 20/60 e 30/60 (research R14).
+- [X] T094 [TEST-BACK] Rate limiting de auth (depende de: T006, T007). Chaves de configuração: `RateLimiting:{Auth|Checkout|OrderSubscribe}:{PermitLimit|WindowSeconds}`, com padrões 10/60, 20/60 e 30/60 (research R14).
   - Em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/EasyMenuApiFactory.cs`: configurar as três políticas com `PermitLimit` alto (10000) e criar `WithRateLimits(int permitLimit)`, que devolve um host com o mesmo banco e limite baixo nas três políticas.
   - `backend/tests/EasyMenu.IntegrationTests/RateLimiting/AuthRateLimitTests.cs` (com `WithRateLimits(2)`):
     - a 3ª chamada de `POST /api/auth/login` na janela dá **429** `application/problem+json` com `code=rate_limited` e `Retry-After` > 0;

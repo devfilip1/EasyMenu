@@ -53,6 +53,30 @@ public sealed class EasyMenuApiFactory : WebApplicationFactory<Program>, IAsyncL
         _withTestControllers ??= WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.AddControllers().AddApplicationPart(typeof(EasyMenuApiFactory).Assembly)));
 
+    /// <summary>Rate-limit policies configured by the tests (research R14): <c>RateLimiting:{Policy}:*</c>.</summary>
+    public static readonly string[] RateLimitPolicies = ["Auth", "Checkout", "OrderSubscribe"];
+
+    /// <summary>Permit limit used by the shared host, high enough that normal tests are never limited.</summary>
+    public const int HighPermitLimit = 10000;
+
+    public const int RateLimitWindowSeconds = 60;
+
+    /// <summary>
+    /// A new host (same database, settings and clock) whose three rate-limit policies allow only
+    /// <paramref name="permitLimit"/> requests per window. Each call gets fresh limiter state; dispose it after use.
+    /// </summary>
+    public WebApplicationFactory<Program> WithRateLimits(int permitLimit) =>
+        WithWebHostBuilder(builder => ConfigureRateLimits(builder, permitLimit));
+
+    private static void ConfigureRateLimits(IWebHostBuilder builder, int permitLimit)
+    {
+        foreach (var policy in RateLimitPolicies)
+        {
+            builder.UseSetting($"RateLimiting:{policy}:PermitLimit", permitLimit.ToString(CultureInfo.InvariantCulture));
+            builder.UseSetting($"RateLimiting:{policy}:WindowSeconds", RateLimitWindowSeconds.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
     /// <summary>Installs a fresh <see cref="FakeTimeProvider"/> starting at the real current time.</summary>
     public FakeTimeProvider ResetClock() => _timeProvider.Current = new FakeTimeProvider(DateTimeOffset.UtcNow);
 
@@ -92,6 +116,7 @@ public sealed class EasyMenuApiFactory : WebApplicationFactory<Program>, IAsyncL
         builder.UseSetting("Jwt:SigningKey", JwtSigningKey);
         builder.UseSetting("Jwt:ExpiresMinutes", JwtExpiresMinutes.ToString(CultureInfo.InvariantCulture));
         builder.UseSetting("Storage:ImagesPath", ImagesPath);
+        ConfigureRateLimits(builder, HighPermitLimit);
 
         builder.ConfigureTestServices(services =>
         {
