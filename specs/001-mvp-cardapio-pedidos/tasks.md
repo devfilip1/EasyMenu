@@ -48,6 +48,12 @@ tarefa `[TEST-*]` anterior.
   código da aplicação.
 - Textos da UI em pt-BR. Dinheiro sempre em centavos (`number` inteiro) e formatado pelo
   `BrlPipe`.
+- **Tarefa `[IMPL-*]` nunca edita teste** (constituição I): nada de `*.spec.ts`, `backend/tests/**`
+  ou `frontend/e2e/**`, nem para "só ajustar uma lista". Se a implementação exige mudar um teste,
+  a mudança vira uma tarefa `[TEST-*]` anterior. *Lição registrada*: a T004 (`[IMPL-FRONT]`, já
+  concluída) editou `frontend/src/app/app.spec.ts`. Fica como exceção histórica e não se repete.
+- Tarefas T094+ foram acrescentadas após a revisão da Coruja. Os IDs não seguem a ordem física;
+  vale a posição no arquivo e o "depende de".
 
 ---
 
@@ -179,6 +185,22 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
   T016 verde.
 
+### Rate limiting (pós-revisão, transversal)
+
+- [ ] T094 [TEST-BACK] Rate limiting de auth (depende de: T006, T007). Chaves de configuração: `RateLimiting:{Auth|Checkout|OrderSubscribe}:{PermitLimit|WindowSeconds}`, com padrões 10/60, 20/60 e 30/60 (research R14).
+  - Em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/EasyMenuApiFactory.cs`: configurar as três políticas com `PermitLimit` alto (10000) e criar `WithRateLimits(int permitLimit)`, que devolve um host com o mesmo banco e limite baixo nas três políticas.
+  - `backend/tests/EasyMenu.IntegrationTests/RateLimiting/AuthRateLimitTests.cs` (com `WithRateLimits(2)`):
+    - a 3ª chamada de `POST /api/auth/login` na janela dá **429** `application/problem+json` com `code=rate_limited` e `Retry-After` > 0;
+    - idem para `POST /api/auth/register-owner`;
+    - esgotar o login não bloqueia o register (partição por endpoint);
+    - `GET /health` nunca é limitado.
+- [ ] T095 [IMPL-BACK] `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` (depende de: T015, T094). T094 verde e `OpenApiContractTests` verde.
+  - `AddRateLimiter` com as políticas `auth`, `checkout` e `order-subscribe` (janela fixa por IP, lidas de `RateLimiting:*`);
+  - `OnRejected` escreve `ApiProblem` 429 `rate_limited` com `Retry-After`;
+  - `UseRateLimiter` em `Program.cs`;
+  - `[EnableRateLimiting("auth")]` + `[ProducesResponseType<ApiProblem>(429, "application/problem+json")]` em login e register-owner;
+  - padrões em `appsettings.json`.
+
 **Checkpoint**: cadastro, login e me funcionam via API; front com sessão, guards e pipes.
 `dotnet test`, `npm test` e `npm run build` verdes.
 
@@ -263,7 +285,8 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 - [ ] T028 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemPhotoTests.cs` (depende de: T025):
   - upload de JPEG dá 200 com `photoUrl` `/media/{establishmentId}/…jpg`, e `GET photoUrl` dá 200 `image/jpeg`;
   - um novo upload substitui a foto e o arquivo antigo some do disco;
-  - arquivo > 5 MB dá 400 `image_too_large`;
+  - arquivo entre 5 e 6 MB dá **413** `image_too_large`;
+  - corpo acima do limite do endpoint (ex.: 7 MB) também dá **413** `image_too_large`, com o mesmo `application/problem+json`;
   - texto com `Content-Type: image/png` dá 400 `invalid_image_type`;
   - sem `file` dá 400;
   - `DELETE /photo` dá 204, remove `photoUrl` e apaga o arquivo;
@@ -275,8 +298,21 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - `backend/src/EasyMenu.Application/Abstractions/IImageStorage.cs`;
   - `backend/src/EasyMenu.Application/Menu/ImageFormat.cs`;
   - `backend/src/EasyMenu.Infrastructure/Storage/{LocalDiskImageStorage.cs,StorageOptions.cs}`;
-  - endpoints de foto em `MenuItemsController` com `[RequestSizeLimit(6MB)]`;
+  - endpoints de foto em `MenuItemsController` com `[RequestSizeLimit(6MB)]` e `[ProducesResponseType<ApiProblem>(413, "application/problem+json")]`;
+  - arquivo > 5 MB lança o erro de domínio `image_too_large`, mapeado para **413**;
+  - em `ProblemDetailsExceptionHandler`, `BadHttpRequestException` com 413 vira 413 `image_too_large` na rota de foto e `payload_too_large` nas demais (research R4);
   - remoção do arquivo em `MenuItemService.Delete`.
+- [ ] T096 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MediaStaticFilesTests.cs` (depende de: T006; pode começar logo após a Foundational). Grava os arquivos direto em `Factory.ImagesPath`:
+  - `{guid}/a.jpg` (bytes JPEG) dá 200 `image/jpeg` com `X-Content-Type-Options: nosniff` e `Cache-Control` contendo `immutable`;
+  - `.png` e `.webp` dão 200 com o tipo correto;
+  - `x.html`, `x.svg`, `x.txt` e arquivo sem extensão dão **404**;
+  - `GET /media/` e `GET /media/{guid}/` dão 404 (sem listagem);
+  - `GET /media/..%2F..%2Fappsettings.json` dá 404.
+- [ ] T097 [US1] [IMPL-BACK] Endurecer `/media` no `Program.cs`, com as opções em `backend/src/EasyMenu.Api/Media/MediaStaticFileOptions.cs` (depende de: T014, T096). T096 verde.
+  - `FileExtensionContentTypeProvider` só com `.jpg/.jpeg/.png/.webp`;
+  - `ServeUnknownFileTypes=false`;
+  - sem `UseDirectoryBrowser`;
+  - `OnPrepareResponse` adiciona `nosniff` e `Cache-Control: public, max-age=31536000, immutable`.
 
 ### Fatia 1e: Auth e admin (front)
 
@@ -315,7 +351,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - envia `priceCents`/`promotionalPriceCents` inteiros;
   - create (`createMenuItem`) e edit (`updateMenuItem`);
   - com arquivo selecionado, chama `uploadMenuItemPhoto` depois de salvar;
-  - 400 `invalid_image_type`/`image_too_large` mostra a mensagem e mantém o item salvo;
+  - 400 `invalid_image_type` ou 413 `image_too_large` mostra a mensagem e mantém o item salvo;
   - "remover foto" chama `deleteMenuItemPhoto`.
 - [ ] T039 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`:
   - itens da categoria na ordem;
@@ -409,6 +445,10 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `backend/src/EasyMenu.Application/Orders/{CheckoutService.cs,RandomPickupCodeGenerator.cs,OrderMappings.cs}` (o retry de até 5 tentativas na violação do índice do código);
   - `backend/src/EasyMenu.Infrastructure/Payments/FakePaymentGateway.cs`;
   - `backend/src/EasyMenu.Api/Controllers/PublicOrdersController.cs` (`[AllowAnonymous]`).
+- [ ] T098 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/CheckoutRateLimitTests.cs` (depende de: T047, T094), com `WithRateLimits(2)`:
+  - a 3ª chamada de `POST /api/public/establishments/{slug}/orders` na janela dá 429 `rate_limited` com `Retry-After`, mesmo quando as anteriores foram 400 (`empty_cart`);
+  - `GET /api/public/establishments/{slug}/menu` não é limitado.
+- [ ] T099 [US2] [IMPL-BACK] `[EnableRateLimiting("checkout")]` e `ProducesResponseType` 429 em `PublicOrdersController.PlaceOrder` (depende de: T049, T095, T098). T098 e `OpenApiContractTests` verdes.
 
 ### Fatia 2c: Cardápio público e carrinho (front)
 
@@ -574,6 +614,11 @@ recarregar, junto com o aviso de retirada.
   - um inscrito no pedido X não recebe eventos de Y;
   - conexão anônima permitida.
 - [ ] T072 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Hubs/OrdersHub.cs` (`SubscribeToOrder` com `IgnoreQueryFilters` por token) e publicação de `PublicOrder` no grupo `order:{token}` em `SignalROrderNotifier` quando o status do pedido muda, com `app.MapHub<OrdersHub>("/hubs/orders")` (depende de: T063, T071). T071 verde.
+- [ ] T100 [US4] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/OrderSubscribeRateLimitTests.cs` (depende de: T071, T094), com `WithRateLimits(2)`:
+  - a 3ª chamada de `SubscribeToOrder` na janela, mesmo com token válido, lança `HubException` com mensagem exatamente `rate_limited`;
+  - a conexão continua `Connected`;
+  - eventos de pedidos já inscritos continuam chegando.
+- [ ] T101 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Realtime/HubMethodRateLimitFilter.cs` (`IHubFilter` com `PartitionedRateLimiter` por IP, política `order-subscribe`, aplicado só a `OrdersHub.SubscribeToOrder`) e registro em `AddSignalR().AddHubOptions<OrdersHub>(o => o.AddFilter<…>())` (depende de: T072, T095, T100). T100 verde.
 - [ ] T073 [P] [US4] [TEST-FRONT] `frontend/src/app/core/realtime/order-realtime.service.spec.ts` (fake de `HubConnection`):
   - `watch(publicToken)` conecta anônimo em `/hubs/orders` e invoca `SubscribeToOrder`;
   - repete a inscrição e emite resync em `onreconnected`;
@@ -680,6 +725,25 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 - [ ] T091 [P] [TEST-FRONT] `frontend/e2e/mobile-360.spec.ts` (SC-008): viewport 360×740 em `/m/{slug}`, no carrinho e em `/pedido/{token}`; sem scroll horizontal (`scrollWidth <= clientWidth`); botões com alvo ≥ 44 px de altura.
 - [ ] T092 [IMPL-FRONT] Ajustes responsivos em `frontend/src/styles.scss` e nos SCSS das páginas públicas até T091 ficar verde (depende de: T091).
 - [ ] T093 [IMPL-BACK] Revisar os logs: nenhum log de senha, token ou `PublicToken` completo. Configurar `Serilog`? **Não** (YAGNI): ajustar apenas os níveis em `appsettings.json` e mascarar o token no log de requests, se houver (depende de: T082).
+- [ ] T102 [P] [TEST-FRONT] Mensagens de 429 e 413 (depende de: T016, T030, T031, T054):
+  - ampliar `frontend/src/app/core/errors/problem.spec.ts`:
+    - `rate_limited` → "Muitas tentativas. Aguarde um instante e tente novamente.";
+    - `payload_too_large` e `image_too_large` → "Arquivo grande demais (máx. 5 MB).";
+  - ampliar `login.page.spec.ts`, `register.page.spec.ts` e `cart-sheet.component.spec.ts`: resposta 429 mostra essa mensagem e reabilita o botão.
+- [ ] T103 [IMPL-FRONT] Tratar 429 em `frontend/src/app/core/errors/problem.ts`, `features/auth/{login,register}.page.ts` e `features/public-menu/cart-sheet.component.ts` (depende de: T018, T032, T055, T102). T102 verde.
+- [ ] T104 [P] [TEST-FRONT] Headers de segurança do deploy (depende de: T017).
+  - `frontend/e2e/security-headers.spec.ts`, no projeto Playwright `prod-headers` (só roda com `E2E_PROD_URL`, padrão `http://localhost:8080`), conferindo em `/`, `/login` e `/m/{slug}` (fallback SPA):
+    - `Content-Security-Policy` com `default-src 'self'`, `script-src 'self'` sem `unsafe-inline`, `object-src 'none'`, `frame-ancestors 'none'` e `connect-src` incluindo a origem da API;
+    - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: DENY` e `Permissions-Policy`;
+    - **zero** eventos `securitypolicyviolation` e zero erros de CSP no console ao carregar as páginas.
+  - Job `frontend-prod-headers` em `.github/workflows/ci.yml`:
+    - `docker build -t easymenu-web frontend` e `docker run` com `API_ORIGIN=http://localhost:5080`;
+    - API + Postgres como no job `e2e`, com `Cors__AllowedOrigins__0=http://localhost:8080`;
+    - roda o projeto `prod-headers`.
+- [ ] T105 [IMPL-FRONT] Imagem de produção do front (depende de: T104). T104 verde.
+  - `frontend/Dockerfile` (multi-stage: `node:24` build → `nginx:alpine`), `frontend/.dockerignore` e `frontend/nginx/default.conf.template`;
+  - no template: fallback SPA para `index.html`, os headers de research R15 com `envsubst` de `API_ORIGIN`/`API_WS_ORIGIN`, e `index.html` sem cache;
+  - `security.autoCsp: true` no build de produção em `frontend/angular.json` (ajustar `inlineCritical` se gerar violação).
 
 ---
 
@@ -703,7 +767,15 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - **equipe REST (T079–T080) depende só da Foundational** e pode rodar em paralelo com US1–US4;
   - corte no hub (T081–T082) depende de T063;
   - pedidos admin (T083–T084) dependem de T049.
-- **Polish (T089–T093)**: depois de todas as stories.
+- **Endurecimento pós-revisão (T094–T105)**:
+  - T094→T095 na Foundational, depois de T015;
+  - T096→T097 (`/media`) depende só da Foundational;
+  - T098→T099 depois de T049;
+  - T100→T101 depois de T072;
+  - T102→T103 depois dos fronts de login/cadastro/checkout;
+  - T104→T105 a qualquer momento após T017.
+- **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
+  adiantar.
 
 ### Regra TDD por fatia
 
@@ -714,12 +786,12 @@ depois vem a próxima fatia. O Dev nunca começa uma fatia cujo teste não estej
 
 | Momento | Testador Back | Dev Back | Testador Front | Dev Front |
 |---|---|---|---|---|
-| 1 | T003, T005, T006, T007–T009 | T001, T002 → T010–T014 (após T005) | T016, T017 | T004 → T018 (após T016) |
+| 1 | T003, T005, T006, T007–T009, **T094** | T001, T002 → T010–T014 (após T005), **T095** (após T015) | T016, T017 | T004 → T018 (após T016) |
 | 2 | T019, T021, T022, T024, T025, **T079** | T015 → T020, T023, T026, **T080** | T030, T031, T033, T035, T037–T039 | T032, T034, T036, T040 |
-| 3 | T027, T028, T043, T045–T048 | T029, T044, T049 | T041, T042, T050, T052, T054, T056 | T051, T053, T055, T058 |
+| 3 | T027, T028, **T096**, T043, T045–T048, **T098** | T029, **T097**, T044, T049, **T099** | T041, T042, T050, T052, T054, T056 | T051, T053, T055, T058 |
 | 4 | T059, T060, T062, **T083** | T061, T063, **T084** | T057, T064, T066, T068–T070 | T065, T067 |
-| 5 | T071, T081 | T072, T082 | T073, T075, T077, T078, T085, T086 | T074, T076, T087 |
-| 6 | T089, T090 | T093 | T088, T091 | T092 |
+| 5 | T071, **T100**, T081 | T072, **T101**, T082 | T073, T075, T077, T078, T085, T086 | T074, T076, T087 |
+| 6 | T089, T090 | T093 | T088, T091, **T102**, **T104** | T092, **T103**, **T105** |
 
 ## Parallel Examples
 
@@ -760,11 +832,11 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | Fase | Tarefas | TEST-BACK | IMPL-BACK | TEST-FRONT | IMPL-FRONT |
 |---|---|---|---|---|---|
 | Setup | 4 | 1 | 2 | 0 | 1 |
-| Foundational | 14 | 5 | 6 | 2 | 1 |
-| US1 | 24 | 7 | 4 | 9 | 4 |
-| US2 | 16 | 5 | 2 | 5 | 4 |
+| Foundational | 16 | 6 | 7 | 2 | 1 |
+| US1 | 26 | 8 | 5 | 9 | 4 |
+| US2 | 18 | 6 | 3 | 5 | 4 |
 | US3 | 12 | 3 | 2 | 5 | 2 |
-| US4 | 8 | 1 | 1 | 4 | 2 |
+| US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
-| Polish | 5 | 2 | 1 | 1 | 1 |
-| **Total** | **93** | **27** | **21** | **29** | **16** |
+| Polish | 9 | 2 | 1 | 3 | 3 |
+| **Total** | **105** | **31** | **25** | **31** | **18** |

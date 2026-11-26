@@ -62,6 +62,7 @@ isolados por tenant (testado em `KitchenHubTests`).
 | Autenticação | Anônimo. |
 | Métodos cliente → servidor | `SubscribeToOrder(publicToken: string) → boolean`: valida o token. Se ele existir, adiciona a conexão ao grupo `order:{publicToken}` e retorna `true`; se não existir, retorna `false` e não inscreve. Chamar de novo após reconectar. |
 | Grupo | `order:{publicToken}`. Só quem conhece o token longo recebe eventos (FR-031a). |
+| Rate limiting | `SubscribeToOrder` tem limite por IP (janela fixa, `RateLimiting:OrderSubscribe:*`; padrão 30 chamadas por minuto). Ao exceder, a invocação falha com `HubException` cuja mensagem é exatamente `rate_limited`, e a conexão continua aberta. O cliente espera e tenta de novo; o estado vem do REST. |
 
 ### Eventos servidor → cliente
 

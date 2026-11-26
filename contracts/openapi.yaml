@@ -16,6 +16,15 @@ info:
       outro estabelecimento dá **404**.
     - Fotos: `photoUrl` é relativo à raiz da API (ex.: `/media/{establishmentId}/{file}.jpg`).
     - Eventos em tempo real (SignalR) estão em `contracts/realtime.md`.
+    - **Rate limiting**: `POST /api/auth/login`, `POST /api/auth/register-owner` e
+      `POST /api/public/establishments/{slug}/orders` têm limite por IP (janela fixa, valores em
+      `RateLimiting:*` na configuração). Ao exceder, a resposta é **429** `rate_limited`, com o header
+      `Retry-After` em segundos.
+    - **Arquivos em `/media/**`** (fora deste contrato, servidos como estáticos): só `.jpg`,
+      `.jpeg`, `.png` e `.webp`, com o `Content-Type` correspondente e
+      `X-Content-Type-Options: nosniff`. Não há listagem de diretório; qualquer outro caminho ou
+      extensão dá **404**.
+    - Tamanho de upload: corpo acima do limite dá **413** (ver `PUT /api/menu-items/{id}/photo`).
 servers:
   - url: http://localhost:5080
     description: Desenvolvimento local
@@ -77,6 +86,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /api/auth/login:
     post:
@@ -102,6 +112,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetails" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /api/auth/me:
     get:
@@ -390,6 +401,10 @@ paths:
       tags: [MenuItems]
       operationId: uploadMenuItemPhoto
       summary: Envia/substitui a foto (JPEG, PNG ou WebP, máx. 5 MB).
+      description: |
+        Arquivo acima de 5 MB dá **413** `image_too_large`. Isso vale também quando o corpo inteiro
+        passa do limite de request do endpoint (6 MB) e é barrado antes de chegar à aplicação: os dois
+        casos têm a mesma resposta.
       requestBody:
         required: true
         content:
@@ -408,13 +423,18 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MenuItem" }
         "400":
-          description: "`invalid_image_type`, `image_too_large` ou arquivo ausente (`validation_failed`)."
+          description: "`invalid_image_type` ou arquivo ausente (`validation_failed`)."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetails" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "413":
+          description: "`image_too_large`: arquivo acima de 5 MB ou corpo acima do limite do endpoint."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
     delete:
       x-pending: true
       tags: [MenuItems]
@@ -496,6 +516,7 @@ paths:
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ItemsUnavailableProblem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
 
   /api/public/orders/{publicToken}:
     parameters:
@@ -746,6 +767,15 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/ProblemDetails" }
+    TooManyRequests:
+      description: "`rate_limited`: limite de requisições por IP excedido."
+      headers:
+        Retry-After:
+          description: Segundos até poder tentar de novo.
+          schema: { type: integer, format: int32 }
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
     NotFound:
       description: "`not_found`: inexistente ou pertence a outro estabelecimento."
       content:
@@ -801,6 +831,8 @@ components:
         - order_not_found
         - invalid_status_transition
         - order_not_ready
+        - rate_limited
+        - payload_too_large
 
     # ---------- errors
     ProblemDetails:

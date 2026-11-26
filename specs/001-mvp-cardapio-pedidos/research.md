@@ -59,7 +59,15 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
   Validações:
   - tipos aceitos: JPEG, PNG e WebP, checados pelos *magic bytes* e não só pelo `Content-Type`;
   - tamanho máximo de 5 MB (o limite do request fica em 6 MB);
-  - tipo inválido → 400 `invalid_image_type`; arquivo grande demais → 400 `image_too_large`.
+  - tipo inválido → 400 `invalid_image_type`;
+  - grande demais → **413 `image_too_large`** nos dois casos: arquivo entre 5 e 6 MB (validação
+    da aplicação) e corpo acima de 6 MB (`BadHttpRequestException` 413 do servidor, convertida
+    pelo `ProblemDetailsExceptionHandler`). Um 413 em outra rota vira `payload_too_large`.
+    *Decisão pós-revisão (Coruja)*: 413 descreve corretamente o "payload grande demais" e deixa
+    as duas origens com a mesma resposta, sem depender de onde o limite foi atingido.
+  - `/media` endurecido: `ContentTypeProvider` só com `.jpg/.jpeg/.png/.webp`,
+    `ServeUnknownFileTypes=false`, sem `UseDirectoryBrowser` e com `X-Content-Type-Options:
+    nosniff` e `Cache-Control: public, max-age=31536000, immutable` (nomes são GUIDs).
   A API devolve `photoUrl` relativo (`/media/...`), e o front resolve contra a URL da API.
   Trocar ou remover a foto apaga o arquivo anterior.
 - **Rationale**: é o pedido do Maestro. A interface permite trocar por S3/R2 depois sem mexer na
@@ -166,3 +174,34 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
   ligado ao `TestServer` (`HttpMessageHandlerFactory = _ => factory.Server.CreateHandler()`,
   transporte LongPolling), com helper na base de testes (`ConnectKitchenHubAsync(token)`,
   `ConnectOrdersHubAsync()`).
+
+## R14. Rate limiting (pós-revisão Coruja)
+
+- **Decision**: `Microsoft.AspNetCore.RateLimiting` nativo, com janela fixa particionada por IP
+  (`RemoteIpAddress`, ou `"unknown"` sem IP). Políticas configuráveis em `RateLimiting:*`:
+  - `auth`: login e register-owner, 10 req/min por IP e por endpoint;
+  - `checkout`: `POST /api/public/establishments/{slug}/orders`, 20 req/min por IP.
+  Na rejeição, a resposta é 429 `application/problem+json` com `code=rate_limited` e
+  `Retry-After`.
+  Para o `SubscribeToOrder` do `/hubs/orders`, o middleware não alcança chamadas de método de
+  hub, então um `IHubFilter` (`HubMethodRateLimitFilter`) aplica um `FixedWindowRateLimiter`
+  particionado por IP (`RateLimiting:OrderSubscribe`, 30/min) e lança
+  `HubException("rate_limited")`.
+  No ambiente `Testing`, a factory configura limites altos, e os testes de limite sobem um host
+  com limites baixos (`WithWebHostBuilder`).
+- **Rationale**: protege contra força bruta no login, criação em massa de contas e de pedidos
+  anônimos, e varredura de tokens via hub.
+- **Alternatives**: proxy/WAF (fora do escopo de infra do MVP); limite por usuário (os alvos são
+  anônimos). Atrás de proxy reverso, será preciso `ForwardedHeaders`, registrado como pendência
+  de deploy.
+
+## R15. Headers de segurança do front (pós-revisão Coruja)
+
+- **Decision**: a imagem de produção do front é `nginx:alpine` servindo o `dist`, com template
+  `frontend/nginx/default.conf.template` (`envsubst` de `API_ORIGIN`). Headers:
+  - `Content-Security-Policy`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: ${API_ORIGIN}; connect-src 'self' ${API_ORIGIN} ${API_WS_ORIGIN}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`;
+  - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+    `X-Frame-Options: DENY` e `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+  O build Angular usa `security.autoCsp` (hash dos scripts inline), para o `script-src` dispensar
+  `'unsafe-inline'`. HSTS fica na borda/TLS, fora do container.
+- **Rationale**: defesa em profundidade contra XSS e clickjacking no cardápio público e no admin.

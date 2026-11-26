@@ -222,6 +222,12 @@ Rotas finais do front:
       `{orderId}`, `{slug}`, `{publicToken}`, `{station}`), porque o teste de contrato compara
       os caminhos literalmente.
     - Não usar prefixo de versão nas rotas.
+11. **Endurecimento pós-revisão** (research R4, R14 e R15):
+    - rate limiting por IP em login, register-owner, checkout e `SubscribeToOrder` (429
+      `rate_limited`);
+    - `/media` só com tipos de imagem, `nosniff` e sem listagem;
+    - upload grande demais dá 413 `image_too_large`;
+    - CSP e headers de segurança na imagem nginx do front.
 
 ## Ordem de execução e paralelismo
 
