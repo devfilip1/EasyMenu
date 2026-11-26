@@ -799,7 +799,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - `frontend/Dockerfile` (multi-stage: `node:24` build → `nginx:alpine`), `frontend/.dockerignore` e `frontend/nginx/default.conf.template`;
   - no template: fallback SPA para `index.html`, os headers de research R15 com `envsubst` de `API_ORIGIN`/`API_WS_ORIGIN`, e `index.html` sem cache;
   - `security.autoCsp: true` no build de produção em `frontend/angular.json` (ajustar `inlineCritical` se gerar violação).
-- [ ] T116 [TEST-FRONT] Mesma origem via nginx (R18; obrigatório antes do deploy) (depende de: T104).
+- [X] T116 [TEST-FRONT] Mesma origem via nginx (R18; obrigatório antes do deploy) (depende de: T104).
   - Ampliar `frontend/e2e/security-headers.spec.ts` (projeto `prod-headers`, via `E2E_PROD_URL`):
     - a CSP tem `connect-src 'self'` e `img-src 'self' data:`, **sem** origem externa;
     - `GET {E2E_PROD_URL}/api/public/establishments/{slug}/menu` dá 200 JSON via proxy (cardápio semeado pela API direta);
