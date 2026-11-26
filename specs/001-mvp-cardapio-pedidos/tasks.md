@@ -248,7 +248,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1c: Itens (back)
 
-- [ ] T024 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Menu/MenuItemTests.cs`:
+- [X] T024 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Menu/MenuItemTests.cs`:
   - preço ≤ 0 ou acima do teto dá `invalid_price`;
   - promoção = preço, > preço, 0 ou negativa dá `invalid_promotional_price`;
   - promoção null é válida;
@@ -256,7 +256,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - `Update` reaplica os invariantes;
   - `SetAvailability`;
   - nome 1–100 e descrição ≤ 500 caracteres.
-- [ ] T025 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemsEndpointsTests.cs`:
+- [X] T025 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemsEndpointsTests.cs`:
   - criar dá 201, com `effectivePriceCents` e `position` no fim da categoria;
   - `GET` por id;
   - listagem ordenada por categoria e posição, com filtro `categoryId`;
