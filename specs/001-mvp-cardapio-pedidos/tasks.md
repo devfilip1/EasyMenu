@@ -470,7 +470,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `Status=paid`;
   - nome vazio ou só espaços vira null, e nome > 60 caracteres é recusado.
 - [X] T046 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/PickupCodeTests.cs`: `PickupCode.Generate()` sempre bate com `^[2-9A-HJKMNP-Z]{4}$` (10.000 amostras) e nunca contém 0, O, 1, I ou L. `PublicToken.Generate()` tem 43 caracteres base64url.
-- [ ] T047 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Checkout/PlaceOrderTests.cs` (depende de: T043):
+- [X] T047 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Checkout/PlaceOrderTests.cs` (depende de: T043):
   - 201 com `PublicOrder`: `status=paid`, total calculado com a promoção vigente, `pickupCode` no formato e `publicToken` com 43 caracteres;
   - campos extras no body (`totalCents`, `unitPriceCents`, `payment`) são ignorados;
   - preço alterado ou promoção removida no admin antes da compra: o pedido usa o preço vigente na hora da compra;
@@ -484,7 +484,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - colisão de código: substituir `IPickupCodeGenerator` via `ConfigureTestServices` por um gerador que repete um código já ativo e depois devolve outro; o pedido é criado com o segundo código.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `POST /api/public/establishments/{slug}/orders`.
-- [ ] T048 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Checkout/PublicOrderEndpointTests.cs` (depende de: T047):
+- [X] T048 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Checkout/PublicOrderEndpointTests.cs` (depende de: T047):
   - `GET /api/public/orders/{publicToken}` devolve itens (nome, preço unitário, quantidade, subtotal), total, status e estabelecimento;
   - **snapshot**: depois de renomear, mudar o preço e apagar o item no admin, o pedido continua igual (SC-006);
   - token inventado dá 404 `order_not_found`;
