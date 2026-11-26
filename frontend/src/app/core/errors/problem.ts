@@ -37,10 +37,26 @@ const KNOWN_CODES: ReadonlySet<string> = new Set(ERROR_CODE);
 
 /** Extracts the stable `code` extension from a ProblemDetails error response, or `null`. */
 export function problemCode(error: HttpErrorResponse): ErrorCode | null {
-  const body: unknown = error.error;
-  if (typeof body !== 'object' || body === null || !('code' in body)) return null;
+  const body = problemBody(error);
+  if (body === null || !('code' in body)) return null;
   const { code } = body;
   return typeof code === 'string' && KNOWN_CODES.has(code) ? (code as ErrorCode) : null;
+}
+
+/**
+ * The ProblemDetails body as an object. Operations without a JSON response (204) are requested
+ * with `responseType: 'text'`, so their error bodies arrive as a JSON string.
+ */
+function problemBody(error: HttpErrorResponse): object | null {
+  let body: unknown = error.error;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch {
+      return null;
+    }
+  }
+  return typeof body === 'object' && body !== null ? body : null;
 }
 
 /** pt-BR message for an `ErrorCode`; a generic message when the code is unknown or absent. */
@@ -56,8 +72,8 @@ export function errorCode(error: unknown): ErrorCode | null {
 /** First message per field of a `validation_failed` problem (`errors` extension, camelCase keys). */
 export function problemFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof HttpErrorResponse)) return {};
-  const body: unknown = error.error;
-  if (typeof body !== 'object' || body === null || !('errors' in body)) return {};
+  const body = problemBody(error);
+  if (body === null || !('errors' in body)) return {};
   const errors = body.errors;
   if (typeof errors !== 'object' || errors === null) return {};
   const result: Record<string, string> = {};
