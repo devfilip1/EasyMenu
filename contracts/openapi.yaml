@@ -135,7 +135,6 @@ paths:
   # ---------------------------------------------------------------- Establishment
   /api/establishment:
     get:
-      x-pending: true
       tags: [Establishment]
       operationId: getEstablishment
       summary: Estabelecimento do Dono autenticado.
@@ -148,7 +147,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     put:
-      x-pending: true
       tags: [Establishment]
       operationId: updateEstablishment
       summary: Altera o nome do estabelecimento; o slug é imutável (FR-003, FR-005).

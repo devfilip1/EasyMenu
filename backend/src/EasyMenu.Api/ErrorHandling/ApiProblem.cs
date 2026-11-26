@@ -7,6 +7,8 @@ namespace EasyMenu.Api.ErrorHandling;
 /// </summary>
 public sealed class ApiProblem
 {
+    public const string MediaType = "application/problem+json";
+
     public string? Type { get; init; }
 
     public string? Title { get; init; }
@@ -47,4 +49,6 @@ public enum ErrorCode
     OrderNotReady,
     PayloadTooLarge,
     RateLimited,
+    Unauthorized,
+    Forbidden,
 }

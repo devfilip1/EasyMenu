@@ -17,6 +17,6 @@ public static class InvalidModelStateResponse
             context.HttpContext, context.ModelState, StatusCodes.Status400BadRequest);
         problem.Extensions[ProblemDetailsExceptionHandler.CodeExtension] = ErrorCodes.ValidationFailed;
 
-        return new BadRequestObjectResult(problem) { ContentTypes = { "application/problem+json" } };
+        return new BadRequestObjectResult(problem) { ContentTypes = { ApiProblem.MediaType } };
     }
 }

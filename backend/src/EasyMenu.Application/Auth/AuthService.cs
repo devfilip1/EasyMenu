@@ -1,5 +1,6 @@
 using EasyMenu.Application.Abstractions;
 using EasyMenu.Application.Common;
+using EasyMenu.Application.Establishments;
 using EasyMenu.Domain.Common;
 using EasyMenu.Domain.Establishments;
 using EasyMenu.Domain.Users;
@@ -89,12 +90,7 @@ public sealed class AuthService(
         Name = user.Name,
         Email = user.Email,
         Role = user.Role,
-        Establishment = new EstablishmentResponse
-        {
-            Id = establishment.Id,
-            Name = establishment.Name,
-            Slug = establishment.Slug,
-        },
+        Establishment = EstablishmentService.ToResponse(establishment),
     };
 
     private string DummyHash() => _dummyHash ??= passwordHasher.Hash(Guid.NewGuid().ToString("N"));

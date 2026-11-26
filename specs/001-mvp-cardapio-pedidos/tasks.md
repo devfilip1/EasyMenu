@@ -278,7 +278,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - isolamento: o token de B nunca vê dados de A.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `GET /api/establishment` e `PUT /api/establishment`.
-- [ ] T020 [US1] [IMPL-BACK] `backend/src/EasyMenu.Application/Establishments/EstablishmentService.cs` e `backend/src/EasyMenu.Api/Controllers/EstablishmentController.cs` (policy `OwnerOnly`) (depende de: T019). T019 verde.
+- [X] T020 [US1] [IMPL-BACK] `backend/src/EasyMenu.Application/Establishments/EstablishmentService.cs` e `backend/src/EasyMenu.Api/Controllers/EstablishmentController.cs` (policy `OwnerOnly`) (depende de: T019). T019 verde.
 
 ### Fatia 1b: Categorias (back)
 
