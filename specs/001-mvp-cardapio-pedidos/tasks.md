@@ -713,13 +713,13 @@ recarregar, junto com o aviso de retirada.
   - a conexão continua `Connected`;
   - eventos de pedidos já inscritos continuam chegando.
 - [ ] T101 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Realtime/HubMethodRateLimitFilter.cs` (`IHubFilter` com `PartitionedRateLimiter` por IP, política `order-subscribe`, aplicado só a `OrdersHub.SubscribeToOrder`) e registro em `AddSignalR().AddHubOptions<OrdersHub>(o => o.AddFilter<…>())` (depende de: T072, T095, T100). T100 verde.
-- [ ] T073 [P] [US4] [TEST-FRONT] `frontend/src/app/core/realtime/order-realtime.service.spec.ts` (fake de `HubConnection`):
+- [X] T073 [P] [US4] [TEST-FRONT] `frontend/src/app/core/realtime/order-realtime.service.spec.ts` (fake de `HubConnection`):
   - `watch(publicToken)` conecta anônimo em `/hubs/orders` e invoca `SubscribeToOrder`;
   - repete a inscrição e emite resync em `onreconnected`;
   - expõe `OrderUpdated`;
   - `stop()` ao destruir.
 - [ ] T074 [US4] [IMPL-FRONT] `frontend/src/app/core/realtime/order-realtime.service.ts` (depende de: T065, T073). T073 verde.
-- [ ] T075 [P] [US4] [TEST-FRONT] Ampliar `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts` e `frontend/src/app/features/public-menu/public-menu.page.spec.ts` (depende de: T056):
+- [X] T075 [P] [US4] [TEST-FRONT] Ampliar `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts` e `frontend/src/app/features/public-menu/public-menu.page.spec.ts` (depende de: T056):
   - rótulos por status: paid "Pago / aguardando preparo", in_preparation "Em preparo", picked_up "Retirado";
   - `ready` mostra o banner destacado "Seu pedido está pronto — retire no balcão" com o código (`role="alert"`);
   - aplica `OrderUpdated` sem recarregar;
@@ -727,7 +727,7 @@ recarregar, junto com o aviso de retirada.
   - abrir a página grava em `OrderHistoryStore`;
   - o cardápio público mostra o link "Acompanhar meu pedido" para o último pedido daquele slug.
 - [ ] T076 [US4] [IMPL-FRONT] Tempo real em `frontend/src/app/features/order-tracking/order-tracking.page.ts` e link de histórico em `public-menu.page.ts` (depende de: T058, T074, T075). T075 verde.
-- [ ] T077 [US4] [TEST-FRONT] Helper E2E `frontend/e2e/support/kitchen.ts` (`advancePart(token, orderId, station, status)` e `pickUp(token, orderId)`), que avança partes e marca a retirada via API com o token do Dono (depende de: T069).
+- [X] T077 [US4] [TEST-FRONT] Helper E2E `frontend/e2e/support/kitchen.ts` (`advancePart(token, orderId, station, status)` e `pickUp(token, orderId)`), que avança partes e marca a retirada via API com o token do Dono (depende de: T069).
 - [ ] T078 [US4] [TEST-FRONT] `frontend/e2e/us4-tracking.spec.ts` (depende de: T077). Fluxo:
   - comprar;
   - a página mostra "Pago / aguardando preparo";
