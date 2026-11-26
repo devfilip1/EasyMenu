@@ -677,7 +677,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
   - os eventos aplicam o upsert ou a remoção sem recarregar;
   - 409 mostra um aviso e chama resync;
   - indicador "Reconectando…" quando `disconnected`.
-- [ ] T067 [US3] [IMPL-FRONT] `frontend/src/app/features/kitchen/{kitchen.page.ts,kitchen-order-card.component.ts}` (depende de: T065, T066). T066 verde.
+- [X] T067 [US3] [IMPL-FRONT] `frontend/src/app/features/kitchen/{kitchen.page.ts,kitchen-order-card.component.ts}` (depende de: T065, T066). T066 verde.
 - [X] T068 [US3] [TEST-FRONT] `frontend/e2e/support/api.ts`: adicionar `loginAs(page, session)`, que grava a sessão no `localStorage` antes da navegação (depende de: T017).
 - [X] T069 [US3] [TEST-FRONT] `frontend/e2e/support/fixtures.ts` (depende de: T068): `test` estendido do Playwright com as fixtures `seeded`, que cadastra o Dono e o cardápio padrão e devolve slug, token e ids, e `ownerPage`, uma página já autenticada como Dono. O painel usa o **Dono** (FR-033a), para a US3 não depender da US5. É usado por T070, T078 e T088.
 - [X] T070 [US3] [TEST-FRONT] `frontend/e2e/us3-kitchen.spec.ts` (depende de: T069). Fluxo:
