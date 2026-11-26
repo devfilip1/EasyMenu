@@ -116,24 +116,24 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
 ### Backend — implementação
 
-- [ ] T010 [IMPL-BACK] Domínio base em `backend/src/EasyMenu.Domain/` (depende de: T005). Criar `Common/DomainException.cs` (com `Code`), `Common/ITenantOwned.cs`, `Establishments/Establishment.cs`, `Establishments/Slug.cs`, `Users/User.cs` e `Users/Role.cs`, conforme o data-model. T005 verde.
-- [ ] T011 [IMPL-BACK] Abstrações e erros da Application (depende de: T010):
+- [X] T010 [IMPL-BACK] Domínio base em `backend/src/EasyMenu.Domain/` (depende de: T005). Criar `Common/DomainException.cs` (com `Code`), `Common/ITenantOwned.cs`, `Establishments/Establishment.cs`, `Establishments/Slug.cs`, `Users/User.cs` e `Users/Role.cs`, conforme o data-model. T005 verde.
+- [X] T011 [IMPL-BACK] Abstrações e erros da Application (depende de: T010):
   - `backend/src/EasyMenu.Application/Abstractions/`: `IAppDbContext`, `ITenantContext`, `IPasswordHasher`, `ITokenService`;
   - `Common/`: `ErrorCodes`, `NotFoundException`, `ConflictException`, `ValidationException`;
   - `DependencyInjection.cs` (`AddApplication`).
-- [ ] T012 [IMPL-BACK] Persistência e tenant (depende de: T011):
+- [X] T012 [IMPL-BACK] Persistência e tenant (depende de: T011):
   - `backend/src/EasyMenu.Infrastructure/Persistence/AppDbContext.cs` implementa `IAppDbContext`, com `UseSnakeCaseNamingConvention`, conversão de enums para snake_case e **global query filter** aplicado em loop a todo `ITenantOwned`, usando `ITenantContext`;
   - `Configurations/EstablishmentConfiguration.cs` e `UserConfiguration.cs`, com os índices do data-model;
   - `TenantSaveChangesInterceptor.cs`;
   - migration `Initial` em `Persistence/Migrations/`.
-- [ ] T013 [IMPL-BACK] JWT e tenant HTTP (depende de: T012):
+- [X] T013 [IMPL-BACK] JWT e tenant HTTP (depende de: T012):
   - `backend/src/EasyMenu.Infrastructure/Auth/JwtTokenService.cs`, `JwtOptions.cs` e `IdentityPasswordHasher.cs`;
   - `backend/src/EasyMenu.Api/Auth/`:
     - `SecurityStampValidator.cs` (`OnTokenValidated`: usuário ativo e stamp igual; senão `Fail`);
     - `AuthPolicies.cs` (`OwnerOnly`, `KitchenAccess`);
     - `HttpTenantContext.cs`;
   - registro de `AddAuthentication().AddJwtBearer` em `Program.cs`, lendo `access_token` da query apenas para `/hubs/*`.
-- [ ] T014 [IMPL-BACK] Infra transversal da Api (depende de: T012):
+- [X] T014 [IMPL-BACK] Infra transversal da Api (depende de: T012):
   - `backend/src/EasyMenu.Api/ErrorHandling/ProblemDetailsExceptionHandler.cs`, com a tabela código → status:
     - 409: `*_taken`, `category_not_empty`, `items_unavailable`, `invalid_status_transition`, `order_not_ready`;
     - 404: `not_found`, `*_not_found`;
@@ -148,7 +148,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - DTO `ApiProblem` (`backend/src/EasyMenu.Api/ErrorHandling/ApiProblem.cs`) idêntico ao schema `ProblemDetails` do contrato, usado em `[ProducesResponseType<ApiProblem>(status, "application/problem+json")]`.
 
   T009 verde.
-- [ ] T015 [IMPL-BACK] `AuthService` (`backend/src/EasyMenu.Application/Auth/`) e `AuthController` (`backend/src/EasyMenu.Api/Controllers/AuthController.cs`), com register-owner, login e me (depende de: T007, T008, T013, T014). T007 e T008 verdes, e `OpenApiContractTests` verde.
+- [X] T015 [IMPL-BACK] `AuthService` (`backend/src/EasyMenu.Application/Auth/`) e `AuthController` (`backend/src/EasyMenu.Api/Controllers/AuthController.cs`), com register-owner, login e me (depende de: T007, T008, T013, T014). T007 e T008 verdes, e `OpenApiContractTests` verde.
 
 ### Frontend — testes (vermelhos)
 
@@ -194,7 +194,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
     - idem para `POST /api/auth/register-owner`;
     - esgotar o login não bloqueia o register (partição por endpoint);
     - `GET /health` nunca é limitado.
-- [ ] T095 [IMPL-BACK] `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` (depende de: T015, T094). T094 verde e `OpenApiContractTests` verde.
+- [X] T095 [IMPL-BACK] `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` (depende de: T015, T094). T094 verde e `OpenApiContractTests` verde.
   - `AddRateLimiter` com as políticas `auth`, `checkout` e `order-subscribe` (janela fixa por IP, lidas de `RateLimiting:*`);
   - `OnRejected` escreve `ApiProblem` 429 `rate_limited` com `Retry-After`;
   - `UseRateLimiter` em `Program.cs`;
@@ -308,7 +308,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - `x.html`, `x.svg`, `x.txt` e arquivo sem extensão dão **404**;
   - `GET /media/` e `GET /media/{guid}/` dão 404 (sem listagem);
   - `GET /media/..%2F..%2Fappsettings.json` dá 404.
-- [ ] T097 [US1] [IMPL-BACK] Endurecer `/media` no `Program.cs`, com as opções em `backend/src/EasyMenu.Api/Media/MediaStaticFileOptions.cs` (depende de: T014, T096). T096 verde.
+- [X] T097 [US1] [IMPL-BACK] Endurecer `/media` no `Program.cs`, com as opções em `backend/src/EasyMenu.Api/Media/MediaStaticFileOptions.cs` (depende de: T014, T096). T096 verde.
   - `FileExtensionContentTypeProvider` só com `.jpg/.jpeg/.png/.webp`;
   - `ServeUnknownFileTypes=false`;
   - sem `UseDirectoryBrowser`;

@@ -64,7 +64,6 @@ paths:
   # ---------------------------------------------------------------- Auth
   /api/auth/register-owner:
     post:
-      x-pending: true
       tags: [Auth]
       operationId: registerOwner
       summary: Cria a conta de Dono e o estabelecimento numa única operação (FR-001..FR-003).
@@ -90,7 +89,6 @@ paths:
 
   /api/auth/login:
     post:
-      x-pending: true
       tags: [Auth]
       operationId: login
       summary: Login de Dono ou Cozinha com e-mail e senha (FR-004).
@@ -116,7 +114,6 @@ paths:
 
   /api/auth/me:
     get:
-      x-pending: true
       tags: [Auth]
       operationId: getCurrentUser
       summary: Dados do usuário autenticado e do seu estabelecimento.

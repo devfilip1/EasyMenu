@@ -11,9 +11,12 @@ public static class ApiJsonOptions
 {
     public static void Apply(JsonSerializerOptions options)
     {
-        // Enums travel as camelCase strings and are documented as `type: string` + `enum`.
-        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
-        // Numbers (e.g. amounts in cents) are plain JSON numbers: `type: integer, format: int64`.
+        // Enums travel as snake_case strings and are documented as `type: string` + `enum`.
+        options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.SnakeCaseLower));
+        // Numbers (e.g. amounts in cents) are plain JSON numbers: `type: integer, format: int64`;
+        // a number sent as a string is rejected (400 validation_failed).
         options.NumberHandling = JsonNumberHandling.Strict;
+        // Null fields are omitted from responses.
+        options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     }
 }

@@ -1,17 +1,38 @@
+using System.Text.Json;
+using EasyMenu.Api.Auth;
+using EasyMenu.Api.ErrorHandling;
+using EasyMenu.Api.Media;
 using EasyMenu.Api.OpenApi;
+using EasyMenu.Api.RateLimiting;
 using EasyMenu.Api.Serialization;
+using EasyMenu.Application;
 using EasyMenu.Infrastructure;
+using EasyMenu.Infrastructure.Auth;
+using EasyMenu.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
+using Microsoft.EntityFrameworkCore;
 
 const string FrontendCorsPolicy = "Frontend";
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options => ApiJsonOptions.Apply(options.JsonSerializerOptions));
+builder.Services
+    .AddControllers(options =>
+        // ModelState keys (and so ProblemDetails.errors) use the JSON names: camelCase.
+        options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.CamelCase)))
+    .AddJsonOptions(options => ApiJsonOptions.Apply(options.JsonSerializerOptions))
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
 builder.Services.ConfigureHttpJsonOptions(options => ApiJsonOptions.Apply(options.SerializerOptions));
-builder.Services.AddOpenApi(options => options.AddSchemaTransformer<StringEnumSchemaTransformer>());
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
+builder.Services.AddOpenApi(options => options
+    .AddSchemaTransformer<StringEnumSchemaTransformer>()
+    .AddSchemaTransformer<EmailFormatSchemaTransformer>());
 builder.Services.AddSignalR();
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
+builder.Services.AddApiAuthentication();
+builder.Services.AddApiRateLimiting();
 
 builder.Services.AddCors(options =>
 {
@@ -31,14 +52,29 @@ if (!app.Environment.IsDevelopment())
     EnsureRequiredConfiguration(app.Configuration);
 }
 
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
+
+app.UseExceptionHandler();
+
 if (!app.Environment.IsProduction())
 {
     // Generated document: /openapi/v1.json (compared against contracts/openapi.yaml in tests).
     app.MapOpenApi();
 }
 
+// Uploaded photos: /media/{establishmentId}/{file} (research R4).
+var imagesPath = Path.GetFullPath(app.Configuration["Storage:ImagesPath"] ?? "data/uploads", app.Environment.ContentRootPath);
+Directory.CreateDirectory(imagesPath);
+app.UseStaticFiles(MediaStaticFileOptions.Create(imagesPath));
+
 app.UseCors(FrontendCorsPolicy);
+app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllers();
 // SignalR hubs are mapped here as features add them, e.g. app.MapHub<OrdersHub>("/hubs/orders").
@@ -49,15 +85,20 @@ static void EnsureRequiredConfiguration(IConfiguration configuration)
 {
     var missing = new List<string>();
 
-    if (string.IsNullOrWhiteSpace(configuration.GetConnectionString(DependencyInjection.ConnectionStringName)))
+    if (string.IsNullOrWhiteSpace(configuration.GetConnectionString(EasyMenu.Infrastructure.DependencyInjection.ConnectionStringName)))
     {
-        missing.Add($"ConnectionStrings__{DependencyInjection.ConnectionStringName}");
+        missing.Add($"ConnectionStrings__{EasyMenu.Infrastructure.DependencyInjection.ConnectionStringName}");
     }
 
     var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
     if (!allowedOrigins.Any(origin => !string.IsNullOrWhiteSpace(origin)))
     {
         missing.Add("Cors__AllowedOrigins (e.g. Cors__AllowedOrigins__0)");
+    }
+
+    if (!JwtOptions.HasValidSigningKey(configuration[$"{JwtOptions.SectionName}:SigningKey"]))
+    {
+        missing.Add($"Jwt__SigningKey (at least {JwtOptions.MinimumSigningKeyBytes} bytes)");
     }
 
     if (missing.Count > 0)
