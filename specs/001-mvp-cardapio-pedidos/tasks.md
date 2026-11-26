@@ -226,7 +226,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
     - `unauthorized` → "Sua sessão expirou. Entre novamente.";
     - `forbidden` → "Você não tem permissão para esta ação.";
   - ampliar `frontend/src/app/core/auth/auth.interceptor.spec.ts`: 403 `forbidden` **não** faz logout (só o 401 faz).
-- [ ] T109 [IMPL-FRONT] Mensagens em `frontend/src/app/core/errors/problem.ts` e ajuste no interceptor, se preciso (depende de: T018, T108). T108 verde, com `npm run build` verde.
+- [X] T109 [IMPL-FRONT] Mensagens em `frontend/src/app/core/errors/problem.ts` e ajuste no interceptor, se preciso (depende de: T018, T108). T108 verde, com `npm run build` verde.
 - [X] T110 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/UniqueViolationTests.cs` (depende de: T007):
   - **determinístico**: inserir direto via `AppDbContext` dois `User` com o mesmo `NormalizedEmail` lança `UniqueConstraintViolationException` com `ConstraintName == "ix_users_normalized_email"`; idem para dois `Establishment` com o mesmo slug (`ix_establishments_slug`);
   - **concorrência**: 10 rodadas de 2 `POST /api/auth/register-owner` simultâneos (`Task.WhenAll`) com o mesmo e-mail e slugs diferentes dão exatamente um 201 e um 409 `email_taken` por rodada, nunca 500; idem com o mesmo slug e e-mails diferentes, que dão 409 `slug_taken`.

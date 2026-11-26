@@ -25,6 +25,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   order_not_found: 'Pedido não encontrado.',
   invalid_status_transition: 'Não é possível mudar o pedido para esse status agora.',
   order_not_ready: 'O pedido ainda não está pronto para retirada.',
+  unauthorized: 'Sua sessão expirou. Entre novamente.',
+  forbidden: 'Você não tem permissão para esta ação.',
   rate_limited: 'Muitas tentativas seguidas. Aguarde um pouco e tente novamente.',
   payload_too_large: 'O envio excedeu o tamanho máximo permitido.',
 };
