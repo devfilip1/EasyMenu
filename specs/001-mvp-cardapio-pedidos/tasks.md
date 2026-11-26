@@ -444,7 +444,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1h: Ajustes da revisão parcial da US1 (Coruja)
 
-- [ ] T118 [P] [US1] [TEST-FRONT] Acessibilidade dos forms já implementados (depende de: T030, T031, T033, T035). Ampliar `frontend/src/app/features/auth/login.page.spec.ts`, `register.page.spec.ts`, `frontend/src/app/features/admin/settings/settings.page.spec.ts` e `frontend/src/app/features/admin/menu/categories-panel.component.spec.ts` com o padrão das convenções:
+- [X] T118 [P] [US1] [TEST-FRONT] Acessibilidade dos forms já implementados (depende de: T030, T031, T033, T035). Ampliar `frontend/src/app/features/auth/login.page.spec.ts`, `register.page.spec.ts`, `frontend/src/app/features/admin/settings/settings.page.spec.ts` e `frontend/src/app/features/admin/menu/categories-panel.component.spec.ts` com o padrão das convenções:
   - campo inválido e tocado: `aria-invalid="true"` e `aria-describedby` contendo o `id` do elemento que exibe a mensagem;
   - obrigatórios com `aria-required="true"`;
   - 409 `slug_taken` e `email_taken` no cadastro, e 400 `validation_failed` com `errors.name` em settings, aparecem no erro do campo, dentro de um ancestral com `aria-live="polite"`;
