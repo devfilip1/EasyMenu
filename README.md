@@ -93,6 +93,46 @@ npx playwright test e2e/us2-checkout.spec.ts --project=desktop-chrome   # um spe
 
 O CI (`.github/workflows/ci.yml`) roda backend e frontend em jobs separados.
 
+## Checklist de deploy
+
+Restrições **obrigatórias** do MVP. Não suba produção sem conferir cada item.
+
+- [ ] **API com 1 réplica só.** Três coisas vivem na memória do processo: o
+  `HubConnectionTracker` (corte imediato de sessões da Cozinha), os grupos do SignalR
+  (`/hubs/kitchen` e `/hubs/orders`) e os contadores de rate limit. Com 2 ou mais réplicas:
+  - eventos em tempo real se perdem entre instâncias;
+  - a desativação não derruba conexões abertas em outra réplica;
+  - cada réplica multiplica o limite.
+
+  Escalar exige backplane Redis no SignalR, rastreamento de conexões distribuído e rate limit
+  distribuído. Está no backlog pós-MVP em `specs/001-mvp-cardapio-pedidos/tasks.md`.
+- [ ] **`ForwardedHeaders` com o nginx como proxy confiável.** Configure
+  `ForwardedHeaders__KnownProxies__0=<IP do nginx>` ou
+  `ForwardedHeaders__KnownNetworks__0=<rede/CIDR do nginx>`.
+  - Sem isso, a API vê todo mundo com o IP do nginx. O rate limit de login, cadastro, checkout e
+    `SubscribeToOrder` passa a valer para a **plataforma inteira**, e um único abuso bloqueia todos
+    os clientes.
+  - Não use redes amplas ou públicas: quem estiver nelas consegue forjar o `X-Forwarded-For`.
+- [ ] **Front: `API_UPSTREAM`** no container do nginx (ex.: `http://api:8080`). O front e a API
+  ficam na mesma origem, porque `/api/`, `/hubs/` e `/media/` passam pelo proxy. O container não
+  sobe sem essa variável.
+- [ ] **`Jwt__SigningKey`** secreta, aleatória, com 32 bytes ou mais e diferente da de
+  desenvolvimento. Configure também `Jwt__Issuer` e `Jwt__Audience` do ambiente. Trocar a chave
+  invalida todas as sessões.
+- [ ] **`ConnectionStrings__Default`** apontando para o PostgreSQL de produção, com um usuário
+  sem privilégio de superusuário.
+- [ ] **Migrations aplicadas antes de subir a nova versão.** Em produção a API **não** aplica
+  migrations sozinha (só faz isso em `Development`). Use
+  `dotnet ef database update --project src/EasyMenu.Infrastructure --startup-project src/EasyMenu.Api`
+  ou um migration bundle no pipeline.
+- [ ] **Storage de imagens persistente.** `Storage__ImagesPath` precisa apontar para um volume
+  persistente e com backup. Em disco efêmero, as fotos somem a cada deploy. A troca para S3/R2
+  via `IImageStorage` está no backlog.
+- [ ] **`ASPNETCORE_ENVIRONMENT=Production`**: desliga o `/openapi/v1.json` e a aplicação
+  automática de migrations.
+- [ ] **TLS e HSTS na borda** (load balancer ou proxy à frente do nginx), porque o container do
+  front serve HTTP.
+
 ## Decisões de scaffolding
 
 - **Controllers** (não minimal APIs) na Api: organização por recurso, filtros/atributos de
