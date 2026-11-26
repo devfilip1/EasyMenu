@@ -302,7 +302,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - arquivo > 5 MB lança o erro de domínio `image_too_large`, mapeado para **413**;
   - em `ProblemDetailsExceptionHandler`, `BadHttpRequestException` com 413 vira 413 `image_too_large` na rota de foto e `payload_too_large` nas demais (research R4);
   - remoção do arquivo em `MenuItemService.Delete`.
-- [ ] T096 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MediaStaticFilesTests.cs` (depende de: T006; pode começar logo após a Foundational). Grava os arquivos direto em `Factory.ImagesPath`:
+- [X] T096 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/MediaStaticFilesTests.cs` (depende de: T006; pode começar logo após a Foundational). Grava os arquivos direto em `Factory.ImagesPath`:
   - `{guid}/a.jpg` (bytes JPEG) dá 200 `image/jpeg` com `X-Content-Type-Options: nosniff` e `Cache-Control` contendo `immutable`;
   - `.png` e `.webp` dão 200 com o tipo correto;
   - `x.html`, `x.svg`, `x.txt` e arquivo sem extensão dão **404**;
