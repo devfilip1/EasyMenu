@@ -27,6 +27,22 @@ describe('problemMessage', () => {
     expect(message).not.toMatch(/_/);
   });
 
+  it.each([
+    ['unauthorized', 'Sua sessão expirou. Entre novamente.'],
+    ['forbidden', 'Você não tem permissão para esta ação.'],
+  ] as const)('"%s" → "%s"', (code, message) => {
+    expect(ERROR_CODE).toContain(code);
+    expect(problemMessage(code)).toBe(message);
+  });
+
+  it('extracts the auth error codes from 401/403 bodies', () => {
+    const unauthorized: ProblemDetails = { status: 401, code: 'unauthorized' };
+    const forbidden: ProblemDetails = { status: 403, code: 'forbidden' };
+
+    expect(problemCode(new HttpErrorResponse({ status: 401, error: unauthorized }))).toBe('unauthorized');
+    expect(problemCode(new HttpErrorResponse({ status: 403, error: forbidden }))).toBe('forbidden');
+  });
+
   it('uses a distinct message per code', () => {
     const messages = ERROR_CODE.map((code) => problemMessage(code));
 

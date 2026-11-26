@@ -82,7 +82,10 @@ describe('authInterceptor', () => {
     const result = api.invoke(getCurrentUser);
     httpMock
       .expectOne(ME_URL)
-      .flush({ status: 401, title: 'Unauthorized' }, { status: 401, statusText: 'Unauthorized' });
+      .flush(
+        { status: 401, title: 'Unauthorized', code: 'unauthorized' },
+        { status: 401, statusText: 'Unauthorized' },
+      );
 
     await expect(result).rejects.toMatchObject({ status: 401 });
     expect(store.isAuthenticated()).toBe(false);
@@ -92,7 +95,28 @@ describe('authInterceptor', () => {
     expect(url).toBe('/login');
   });
 
-  it('keeps the session on errors other than 401', async () => {
+  it('does not log out on 403 forbidden (only 401 does)', async () => {
+    const session = authSession('kitchen');
+    store.setSession(session);
+    const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const logout = vi.spyOn(store, 'logout');
+
+    const result = api.invoke(getCurrentUser);
+    httpMock
+      .expectOne(ME_URL)
+      .flush(
+        { status: 403, title: 'Forbidden', code: 'forbidden' },
+        { status: 403, statusText: 'Forbidden' },
+      );
+
+    await expect(result).rejects.toMatchObject({ status: 403, error: { code: 'forbidden' } });
+    expect(logout).not.toHaveBeenCalled();
+    expect(store.token()).toBe(session.accessToken);
+    expect(store.isAuthenticated()).toBe(true);
+    expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('keeps the session on other errors (e.g. 404 not_found)', async () => {
     const session = authSession('owner');
     store.setSession(session);
     const navigateByUrl = vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
@@ -100,9 +124,12 @@ describe('authInterceptor', () => {
     const result = api.invoke(getCurrentUser);
     httpMock
       .expectOne(ME_URL)
-      .flush({ status: 403, title: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+      .flush(
+        { status: 404, title: 'Not Found', code: 'not_found' },
+        { status: 404, statusText: 'Not Found' },
+      );
 
-    await expect(result).rejects.toMatchObject({ status: 403 });
+    await expect(result).rejects.toMatchObject({ status: 404 });
     expect(store.token()).toBe(session.accessToken);
     expect(navigateByUrl).not.toHaveBeenCalled();
   });
