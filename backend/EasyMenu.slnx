@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EasyMenu.Api/EasyMenu.Api.csproj" />
+    <Project Path="src/EasyMenu.Application/EasyMenu.Application.csproj" />
+    <Project Path="src/EasyMenu.Domain/EasyMenu.Domain.csproj" />
+    <Project Path="src/EasyMenu.Infrastructure/EasyMenu.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EasyMenu.IntegrationTests/EasyMenu.IntegrationTests.csproj" />
+    <Project Path="tests/EasyMenu.UnitTests/EasyMenu.UnitTests.csproj" />
+  </Folder>
+</Solution>

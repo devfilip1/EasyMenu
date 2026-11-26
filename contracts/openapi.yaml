@@ -1,0 +1,40 @@
+openapi: 3.1.0
+info:
+  title: EasyMenu API
+  version: 0.1.0
+  description: |
+    Contrato da API do EasyMenu (fonte da verdade backend <-> frontend).
+    Dono: agente Arquiteto. Valores monetários são inteiros em centavos (BRL).
+servers:
+  - url: http://localhost:5080
+    description: Desenvolvimento local
+tags:
+  - name: Health
+paths:
+  /health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Verifica se a API e o banco de dados estão disponíveis.
+      responses:
+        "200":
+          description: API e banco disponíveis.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Banco de dados indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
