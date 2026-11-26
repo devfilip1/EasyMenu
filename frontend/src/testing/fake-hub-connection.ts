@@ -37,8 +37,14 @@ export class FakeHubConnection {
     this.closeCallbacks.forEach((cb) => cb());
   }
 
-  invoke(): Promise<unknown> {
-    return Promise.resolve(true);
+  /** Every `invoke(method, ...args)` call, in order. */
+  readonly invocations: { method: string; args: unknown[] }[] = [];
+  /** Result returned by `invoke` (e.g. `SubscribeToOrder` → boolean). */
+  invokeResult: unknown = true;
+
+  invoke(method: string, ...args: unknown[]): Promise<unknown> {
+    this.invocations.push({ method, args });
+    return Promise.resolve(this.invokeResult);
   }
 
   onreconnecting(cb: (error?: Error) => void): void {
