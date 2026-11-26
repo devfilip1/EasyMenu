@@ -1,6 +1,7 @@
 using EasyMenu.Application.Abstractions;
 using EasyMenu.Infrastructure.Auth;
 using EasyMenu.Infrastructure.Persistence;
+using EasyMenu.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +40,12 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IPasswordHasher, IdentityPasswordHasher>();
+
+        services.AddOptions<StorageOptions>()
+            .BindConfiguration(StorageOptions.SectionName)
+            .Validate(o => !string.IsNullOrWhiteSpace(o.ImagesPath) && o.MaxImageBytes > 0,
+                "Storage:ImagesPath must be set and Storage:MaxImageBytes must be positive.");
+        services.AddSingleton<IImageStorage, LocalDiskImageStorage>();
 
         return services;
     }

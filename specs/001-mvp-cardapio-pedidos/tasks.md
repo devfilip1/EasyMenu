@@ -360,7 +360,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - **isolamento**: upload no item de A com token de B dá 404.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `PUT/DELETE /api/menu-items/{id}/photo`.
-- [ ] T029 [US1] [IMPL-BACK] Fotos (depende de: T026, T027, T028). T027 e T028 verdes.
+- [X] T029 [US1] [IMPL-BACK] Fotos (depende de: T026, T027, T028). T027 e T028 verdes.
   - `backend/src/EasyMenu.Application/Abstractions/IImageStorage.cs`;
   - `backend/src/EasyMenu.Application/Menu/ImageFormat.cs`;
   - `backend/src/EasyMenu.Infrastructure/Storage/{LocalDiskImageStorage.cs,StorageOptions.cs}`;

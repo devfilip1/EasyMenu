@@ -9,8 +9,10 @@ using EasyMenu.Application;
 using EasyMenu.Infrastructure;
 using EasyMenu.Infrastructure.Auth;
 using EasyMenu.Infrastructure.Persistence;
+using EasyMenu.Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 const string FrontendCorsPolicy = "Frontend";
 
@@ -27,10 +29,14 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<ProblemDetailsExceptionHandler>();
 builder.Services.AddOpenApi(options => options
     .AddSchemaTransformer<StringEnumSchemaTransformer>()
-    .AddSchemaTransformer<EmailFormatSchemaTransformer>());
+    .AddSchemaTransformer<EmailFormatSchemaTransformer>()
+    .AddOperationTransformer<RequiredFormFieldsOperationTransformer>());
 builder.Services.AddSignalR();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
+// A relative Storage:ImagesPath is relative to the content root, both for uploads and for /media.
+builder.Services.PostConfigure<StorageOptions>(options =>
+    options.ImagesPath = Path.GetFullPath(options.ImagesPath, builder.Environment.ContentRootPath));
 builder.Services.AddApiAuthentication();
 builder.Services.AddApiRateLimiting();
 
@@ -67,7 +73,7 @@ if (!app.Environment.IsProduction())
 }
 
 // Uploaded photos: /media/{establishmentId}/{file} (research R4).
-var imagesPath = Path.GetFullPath(app.Configuration["Storage:ImagesPath"] ?? "data/uploads", app.Environment.ContentRootPath);
+var imagesPath = app.Services.GetRequiredService<IOptions<StorageOptions>>().Value.ImagesPath;
 Directory.CreateDirectory(imagesPath);
 app.UseStaticFiles(MediaStaticFileOptions.Create(imagesPath));
 

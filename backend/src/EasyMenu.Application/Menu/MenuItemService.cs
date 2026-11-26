@@ -1,14 +1,17 @@
 using EasyMenu.Application.Abstractions;
 using EasyMenu.Application.Common;
+using EasyMenu.Domain.Common;
 using EasyMenu.Domain.Menu;
 using Microsoft.EntityFrameworkCore;
 
 namespace EasyMenu.Application.Menu;
 
 /// <summary>Owner's menu items (FR-007..FR-011). Queries are tenant-filtered by the DbContext.</summary>
-public sealed class MenuItemService(IAppDbContext db, ITenantContext tenant)
+public sealed class MenuItemService(IAppDbContext db, ITenantContext tenant, IImageStorage imageStorage)
 {
     public const string CategoryNotFound = "category_not_found";
+    public const string ImageTooLarge = "image_too_large";
+    public const string InvalidImageType = "invalid_image_type";
     public const string MediaPathPrefix = "/media/";
 
     /// <summary>Ordered by category position, then item position; includes sold-out items.</summary>
@@ -82,6 +85,70 @@ public sealed class MenuItemService(IAppDbContext db, ITenantContext tenant)
         var item = await FindAsync(id, cancellationToken);
         db.MenuItems.Remove(item);
         await db.SaveChangesAsync(cancellationToken);
+        DeletePhotoFile(item.PhotoPath);
+    }
+
+    /// <summary>
+    /// Saves (or replaces) the item photo. The type comes from the magic bytes, never from the file name or
+    /// Content-Type. A failed upload leaves the item and its current photo untouched.
+    /// </summary>
+    public async Task<MenuItemResponse> SetPhotoAsync(Guid id, Stream content, long length, CancellationToken cancellationToken)
+    {
+        var item = await FindAsync(id, cancellationToken);
+        if (length > imageStorage.MaxImageBytes)
+        {
+            throw new DomainException(ImageTooLarge);
+        }
+
+        var format = ImageFormat.Detect(await ReadHeaderAsync(content, cancellationToken))
+            ?? throw new DomainException(InvalidImageType);
+
+        var previousPath = item.PhotoPath;
+        var newPath = await imageStorage.SaveAsync(item.EstablishmentId, content, format, cancellationToken);
+        try
+        {
+            item.SetPhoto(newPath);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            imageStorage.Delete(newPath);
+            throw;
+        }
+
+        DeletePhotoFile(previousPath);
+        return ToResponse(item);
+    }
+
+    public async Task DeletePhotoAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var item = await FindAsync(id, cancellationToken);
+        var previousPath = item.PhotoPath;
+        item.RemovePhoto();
+        await db.SaveChangesAsync(cancellationToken);
+        DeletePhotoFile(previousPath);
+    }
+
+    private void DeletePhotoFile(string? photoPath)
+    {
+        if (photoPath is not null)
+        {
+            imageStorage.Delete(photoPath);
+        }
+    }
+
+    // Reads the first bytes for type detection and rewinds, so the whole file is stored.
+    private static async Task<byte[]> ReadHeaderAsync(Stream content, CancellationToken cancellationToken)
+    {
+        if (!content.CanSeek)
+        {
+            throw new InvalidOperationException("The photo stream must be seekable.");
+        }
+
+        var header = new byte[ImageFormat.HeaderLength];
+        var read = await content.ReadAtLeastAsync(header, header.Length, throwOnEndOfStream: false, cancellationToken);
+        content.Position = 0;
+        return header[..read];
     }
 
     /// <summary>Orders the items of a category by a complete list of their ids.</summary>
