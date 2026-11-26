@@ -215,7 +215,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 - [ ] T107 [IMPL-BACK] Corpo de 401/403 (depende de: T013, T014, T106). T106 e `OpenApiContractTests` verdes.
   - `backend/src/EasyMenu.Api/Auth/AuthProblemEvents.cs`: `OnChallenge` (`HandleResponse`, `ApiProblem` 401 `unauthorized`, mantém `WWW-Authenticate`) e `OnForbidden` (`ApiProblem` 403 `forbidden`), registrados em `AddJwtBearer`;
   - `unauthorized`/`forbidden` em `EasyMenu.Application/Common/ErrorCodes.cs` e no enum de `code` exposto no OpenAPI gerado.
-- [ ] T108 [P] [TEST-FRONT] (depende de: T016):
+- [X] T108 [P] [TEST-FRONT] (depende de: T016):
   - ampliar `frontend/src/app/core/errors/problem.spec.ts`:
     - `unauthorized` → "Sua sessão expirou. Entre novamente.";
     - `forbidden` → "Você não tem permissão para esta ação.";
