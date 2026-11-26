@@ -69,6 +69,13 @@ export function errorCode(error: unknown): ErrorCode | null {
   return error instanceof HttpErrorResponse ? problemCode(error) : null;
 }
 
+/** Value of a ProblemDetails extension (e.g. `unavailableItems`), or `undefined`. */
+export function problemExtension(error: unknown, name: string): unknown {
+  if (!(error instanceof HttpErrorResponse)) return undefined;
+  const body = problemBody(error) as Record<string, unknown> | null;
+  return body?.[name];
+}
+
 /** First message per field of a `validation_failed` problem (`errors` extension, camelCase keys). */
 export function problemFieldErrors(error: unknown): Record<string, string> {
   if (!(error instanceof HttpErrorResponse)) return {};

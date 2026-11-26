@@ -581,7 +581,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `frontend/src/app/core/storage/order-history.store.spec.ts`:
     - `remember({publicToken, slug, pickupCode, createdAt})` mantém os 10 mais recentes;
     - `lastForSlug(slug)`.
-- [ ] T055 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart-sheet.component.ts` e `frontend/src/app/core/storage/order-history.store.ts` (depende de: T053, T054). T054 verde.
+- [X] T055 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart-sheet.component.ts` e `frontend/src/app/core/storage/order-history.store.ts` (depende de: T053, T054). T054 verde.
 - [X] T056 [P] [US2] [TEST-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts`, parte estática:
   - carrega `getPublicOrder(publicToken)`;
   - mostra o código de retirada em destaque, os itens com quantidade, preço unitário e subtotal, e o total;
