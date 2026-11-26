@@ -202,4 +202,22 @@ describe('CartSheetComponent', () => {
 
     expect(alertText(el)).toContain('Itens indisponíveis: Caipirinha');
   });
+
+  it('429 rate_limited shows the wait message, keeps the cart and re-enables "Comprar" (T102)', async () => {
+    await renderWithItems();
+
+    await clickBuy();
+    const req = expectRequest(httpMock, 'POST', ORDER_URL);
+    expect(buy().disabled).toBe(true);
+    req.flush(
+      { status: 429, title: 'Too Many Requests', code: 'rate_limited' },
+      { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '30' } },
+    );
+    await settle(fixture);
+
+    expect(alertText(el)).toContain('Muitas tentativas. Aguarde um instante e tente novamente.');
+    expect(buy().disabled).toBe(false);
+    expect(cart.lines()).toHaveLength(2);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
 });

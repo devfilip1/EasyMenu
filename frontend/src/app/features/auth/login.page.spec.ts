@@ -170,4 +170,21 @@ describe('LoginPage', () => {
       expect(describedErrorText(password())).not.toContain('E-mail ou senha inválidos');
     });
   });
+
+  it('429 rate_limited shows the wait message and re-enables the button (T102)', async () => {
+    await fillAndSubmit();
+    const req = expectRequest(httpMock, 'POST', LOGIN_URL);
+    expect(submit().disabled).toBe(true);
+
+    req.flush(
+      { status: 429, title: 'Too Many Requests', code: 'rate_limited' },
+      { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '30' } },
+    );
+    await settle(fixture);
+
+    expect(alertText(el)).toContain('Muitas tentativas. Aguarde um instante e tente novamente.');
+    expect(alertText(el)).not.toContain('E-mail ou senha inválidos');
+    expect(submit().disabled).toBe(false);
+    expect(setSession).not.toHaveBeenCalled();
+  });
 });

@@ -43,10 +43,22 @@ describe('problemMessage', () => {
     expect(problemCode(new HttpErrorResponse({ status: 403, error: forbidden }))).toBe('forbidden');
   });
 
-  it('uses a distinct message per code', () => {
-    const messages = ERROR_CODE.map((code) => problemMessage(code));
+  it.each([
+    ['rate_limited', 'Muitas tentativas. Aguarde um instante e tente novamente.'],
+    ['payload_too_large', 'Arquivo grande demais (máx. 5 MB).'],
+    ['image_too_large', 'Arquivo grande demais (máx. 5 MB).'],
+  ] as const)('"%s" → "%s" (T102)', (code, message) => {
+    expect(problemMessage(code)).toBe(message);
+  });
 
-    expect(new Set(messages).size).toBe(ERROR_CODE.length);
+  it('uses a distinct message per code (only the two "too large" codes share one)', () => {
+    // payload_too_large (any request body) and image_too_large (photo) mean the same to the user.
+    const shared = new Set(['payload_too_large', 'image_too_large']);
+    const distinctCodes = ERROR_CODE.filter((code) => !shared.has(code));
+    const messages = distinctCodes.map((code) => problemMessage(code));
+
+    expect(new Set(messages).size).toBe(distinctCodes.length);
+    expect(messages).not.toContain(problemMessage('image_too_large'));
   });
 
   it('falls back to a generic message when the code is missing', () => {

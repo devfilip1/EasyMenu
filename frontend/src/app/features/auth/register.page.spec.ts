@@ -248,4 +248,22 @@ describe('RegisterPage', () => {
       expect(describedErrorText(controls.slug())).not.toContain(problemMessage('email_taken'));
     });
   });
+
+  it('429 rate_limited shows the wait message and re-enables the button (T102)', async () => {
+    await fill(VALID);
+    await submitForm();
+    const req = expectRequest(httpMock, 'POST', REGISTER_URL);
+    expect(submit().disabled).toBe(true);
+
+    req.flush(
+      { status: 429, title: 'Too Many Requests', code: 'rate_limited' },
+      { status: 429, statusText: 'Too Many Requests', headers: { 'Retry-After': '30' } },
+    );
+    await settle(fixture);
+
+    const alerts = Array.from(el.querySelectorAll('[role="alert"]')).map((a) => textOf(a)).join(' ');
+    expect(alerts).toContain('Muitas tentativas. Aguarde um instante e tente novamente.');
+    expect(submit().disabled).toBe(false);
+    expect(setSession).not.toHaveBeenCalled();
+  });
 });
