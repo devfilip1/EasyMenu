@@ -174,7 +174,8 @@ jobs:
         run: dotnet build src/EasyMenu.Api
 
       - name: Build production image
-        run: docker build -t easymenu-web .
+        # The API client is generated inside the image from the contract (named build context).
+        run: docker build --build-context contracts=../contracts -t easymenu-web .
 
       # nginx listens on port 80 inside the container.
       - name: Run production image

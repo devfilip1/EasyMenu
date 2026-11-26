@@ -40,6 +40,15 @@ npm install
 npm start                       # http://localhost:4200 (gera o client da API antes de subir)
 ```
 
+Imagem de produção do front (nginx com fallback SPA e headers de segurança/CSP):
+
+```bash
+cd frontend
+docker build --build-context contracts=../contracts -t easymenu-web .
+docker run -p 8080:80 -e API_ORIGIN=http://localhost:5080 -e API_WS_ORIGIN=ws://localhost:5080 easymenu-web
+E2E_PROD_URL=http://localhost:8080 E2E_BASE_URL=http://localhost:8080 npx playwright test --project=prod-headers
+```
+
 Rotas do front: `/m/:slug` (cardápio público), `/pedido/:publicToken`, `/admin` (`/admin/cardapio`, `/admin/equipe`, `/admin/pedidos`, `/admin/pedidos/:orderId`, `/admin/estabelecimento`), `/cozinha`, `/login`, `/cadastro`.
 
 ## Testes

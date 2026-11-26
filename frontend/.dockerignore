@@ -1,0 +1,14 @@
+node_modules
+dist
+.angular
+coverage
+out-tsc
+test-results
+playwright-report
+e2e
+src/app/api/generated
+Dockerfile
+.dockerignore
+.vscode
+.idea
+*.log

@@ -740,7 +740,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
     - `docker build -t easymenu-web frontend` e `docker run` com `API_ORIGIN=http://localhost:5080`;
     - API + Postgres como no job `e2e`, com `Cors__AllowedOrigins__0=http://localhost:8080`;
     - roda o projeto `prod-headers`.
-- [ ] T105 [IMPL-FRONT] Imagem de produção do front (depende de: T104). T104 verde.
+- [X] T105 [IMPL-FRONT] Imagem de produção do front (depende de: T104). T104 verde.
   - `frontend/Dockerfile` (multi-stage: `node:24` build → `nginx:alpine`), `frontend/.dockerignore` e `frontend/nginx/default.conf.template`;
   - no template: fallback SPA para `index.html`, os headers de research R15 com `envsubst` de `API_ORIGIN`/`API_WS_ORIGIN`, e `index.html` sem cache;
   - `security.autoCsp: true` no build de produção em `frontend/angular.json` (ajustar `inlineCritical` se gerar violação).
