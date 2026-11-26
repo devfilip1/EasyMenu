@@ -426,7 +426,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - promoção exibida com o preço original riscado;
   - excluir com confirmação chama `deleteMenuItem`;
   - subir/descer chama `reorderCategoryItems` com a lista completa.
-- [ ] T040 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/menu/{price-input.ts,menu-item-form.component.ts,menu-items-list.component.ts}` e integração em `menu.page.ts` (depende de: T036, T037, T038, T039). T037–T039 verdes.
+- [X] T040 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/menu/{price-input.ts,menu-item-form.component.ts,menu-items-list.component.ts}` e integração em `menu.page.ts` (depende de: T036, T037, T038, T039). T037–T039 verdes.
 
 ### Fatia 1g: E2E
 
