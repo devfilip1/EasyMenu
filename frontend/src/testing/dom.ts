@@ -129,3 +129,20 @@ export function rowWith(root: ParentNode, testId: string, text: string): HTMLEle
   if (!row) throw new Error(`No [data-testid="${testId}"] containing "${text}"`);
   return row;
 }
+
+/**
+ * The <section> whose accessible name (aria-label, or the text of the element referenced by
+ * aria-labelledby) matches exactly. Mirrors Playwright's `getByRole('region', { name })`.
+ */
+export function region(root: ParentNode, name: string): HTMLElement {
+  const sections = Array.from(root.querySelectorAll<HTMLElement>('section'));
+  const found = sections.find((s) => {
+    const label = s.getAttribute('aria-label');
+    if (label !== null) return normalize(label) === name;
+    const ids = (s.getAttribute('aria-labelledby') ?? '').split(/\s+/).filter(Boolean);
+    const text = ids.map((id) => textOf(s.ownerDocument.getElementById(id))).join(' ');
+    return normalize(text) === name;
+  });
+  if (!found) throw new Error(`No <section> named "${name}" (aria-label or aria-labelledby)`);
+  return found;
+}
