@@ -16,6 +16,8 @@ public static class RealtimeSetup
         // Singleton: the limiter state (per-IP windows) must outlive each invocation.
         services.AddSingleton<HubMethodRateLimitFilter>();
         services.AddScoped<IOrderNotifier, SignalROrderNotifier>();
+        services.AddSingleton<HubConnectionTracker>();
+        services.AddSingleton<ISessionTerminator>(sp => sp.GetRequiredService<HubConnectionTracker>());
         return services;
     }
 

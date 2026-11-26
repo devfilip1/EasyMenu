@@ -10,7 +10,11 @@ namespace EasyMenu.Application.Staff;
 /// so every query filters by the caller's establishment and the Kitchen role explicitly.
 /// </summary>
 public sealed class StaffService(
-    IAppDbContext db, ITenantContext tenant, IPasswordHasher passwordHasher, TimeProvider timeProvider)
+    IAppDbContext db,
+    ITenantContext tenant,
+    IPasswordHasher passwordHasher,
+    ISessionTerminator sessionTerminator,
+    TimeProvider timeProvider)
 {
     public async Task<IReadOnlyList<StaffMemberResponse>> ListAsync(CancellationToken cancellationToken)
     {
@@ -44,6 +48,8 @@ public sealed class StaffService(
 
         member.Deactivate();
         await db.SaveChangesAsync(cancellationToken);
+        // After the commit: open hub connections were authenticated before the stamp changed (research R2).
+        sessionTerminator.TerminateSessions(member.Id);
         return ToResponse(member);
     }
 
