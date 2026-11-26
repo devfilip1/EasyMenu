@@ -80,7 +80,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
 ### Backend — testes (vermelhos)
 
-- [ ] T005 [P] [TEST-BACK] Testes de unidade do domínio base:
+- [X] T005 [P] [TEST-BACK] Testes de unidade do domínio base:
   - `backend/tests/EasyMenu.UnitTests/Domain/Establishments/SlugTests.cs`: válidos `abc`, `bar-do-ze`, `a1b`; inválidos `ab`, `-abc`, `abc-`, `Bar`, `bár`, `a_b`, 51 caracteres; normaliza trim e minúsculas → `invalid_slug`.
   - `EstablishmentTests.cs`: nome 2–100 caracteres com trim; `Rename`; o slug não tem setter público.
   - `backend/tests/EasyMenu.UnitTests/Domain/Users/UserTests.cs`: normaliza o e-mail; `Deactivate` gera um novo `SecurityStamp` e é idempotente; `Deactivate` em Owner lança `cannot_deactivate_owner`.
