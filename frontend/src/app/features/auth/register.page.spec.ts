@@ -2,7 +2,21 @@ import { HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
 import { authSession } from '../../../testing/auth-session';
-import { button, byLabel, fieldOf, isInvalid, textOf, typeInto } from '../../../testing/dom';
+import {
+  button,
+  byLabel,
+  describedErrorText,
+  expectFieldError,
+  fieldOf,
+  firstInvalidControl,
+  inPoliteLiveRegion,
+  isInvalid,
+  isRequired,
+  queryByLabel,
+  snapshotDescribedBy,
+  textOf,
+  typeInto,
+} from '../../../testing/dom';
 import {
   apiUrl,
   expectNoRequest,
@@ -172,5 +186,66 @@ describe('RegisterPage', () => {
 
     expect(setSession).toHaveBeenCalledWith(session);
     expect(lastNavigation()).toBe('/admin/cardapio');
+  });
+
+  describe('form accessibility (convention)', () => {
+    it('marks the required fields with aria-required and the form as novalidate', () => {
+      for (const field of ['email', 'password', 'establishmentName', 'slug'] as Field[]) {
+        expect(isRequired(controls[field]()), field).toBe(true);
+      }
+      const ownerName = queryByLabel(el, /seu nome/i);
+      if (ownerName) expect(isRequired(ownerName)).toBe(false);
+      expect(el.querySelector('form')?.hasAttribute('novalidate')).toBe(true);
+    });
+
+    it('links every invalid field to its own error message', async () => {
+      const fields = ['email', 'password', 'establishmentName', 'slug'] as Field[];
+      // Taken before any error is shown: hints (e.g. the slug's) are not errors.
+      const baselines = fields.map((field) => snapshotDescribedBy(controls[field]()));
+
+      await submitForm();
+
+      expectNoRequest(httpMock, 'POST', REGISTER_URL);
+      const errors = fields.map((field, i) => expectFieldError(controls[field](), undefined, baselines[i]));
+      expect(new Set(errors.map((e) => e.id)).size).toBe(errors.length);
+    });
+
+    it('focuses the first invalid control in DOM order', async () => {
+      await submitForm();
+
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement).toBe(firstInvalidControl(el));
+    });
+
+    it('focuses the slug when it is the only invalid field', async () => {
+      const baseline = snapshotDescribedBy(controls.slug());
+      await fill({ ...VALID, slug: 'Bar Inválido' });
+      await submitForm();
+
+      expectNoRequest(httpMock, 'POST', REGISTER_URL);
+      expectFieldError(controls.slug(), undefined, baseline);
+      expect(document.activeElement).toBe(controls.slug());
+    });
+
+    it('409 slug_taken is the slug field error, inside a polite live region', async () => {
+      await fill(VALID);
+      await submitForm();
+      flushProblem(expectRequest(httpMock, 'POST', REGISTER_URL), 409, 'slug_taken');
+      await settle(fixture);
+
+      const error = expectFieldError(controls.slug(), 'Este endereço já está em uso');
+      expect(inPoliteLiveRegion(error)).toBe(true);
+    });
+
+    it('409 email_taken is the e-mail field error, inside a polite live region', async () => {
+      await fill(VALID);
+      await submitForm();
+      flushProblem(expectRequest(httpMock, 'POST', REGISTER_URL), 409, 'email_taken');
+      await settle(fixture);
+
+      const error = expectFieldError(controls.email(), problemMessage('email_taken'));
+      expect(inPoliteLiveRegion(error)).toBe(true);
+      expect(describedErrorText(controls.slug())).not.toContain(problemMessage('email_taken'));
+    });
   });
 });

@@ -6,8 +6,12 @@ import {
   alertText,
   button,
   byLabel,
+  describedErrorText,
+  expectFieldError,
   fieldOf,
+  firstInvalidControl,
   isInvalid,
+  isRequired,
   textOf,
   typeInto,
 } from '../../../testing/dom';
@@ -124,5 +128,46 @@ describe('LoginPage', () => {
     flushProblem(req, 401, 'invalid_credentials');
     await settle(fixture);
     expect(submit().disabled).toBe(false);
+  });
+
+  describe('form accessibility (convention)', () => {
+    it('marks both fields as required and the form as novalidate', () => {
+      expect(isRequired(email())).toBe(true);
+      expect(isRequired(password())).toBe(true);
+      expect(el.querySelector('form')?.hasAttribute('novalidate')).toBe(true);
+    });
+
+    it('links each invalid field to its error message and focuses the first one', async () => {
+      submit().click();
+      await settle(fixture);
+
+      expectNoRequest(httpMock, 'POST', LOGIN_URL);
+      expectFieldError(email());
+      expectFieldError(password());
+      expect(document.activeElement).toBe(firstInvalidControl(el));
+      expect(document.activeElement).toBe(email());
+    });
+
+    it('focuses the password when only the password is missing', async () => {
+      typeInto(email(), 'dono@bar.test');
+      await settle(fixture);
+      submit().click();
+      await settle(fixture);
+
+      expectNoRequest(httpMock, 'POST', LOGIN_URL);
+      expect(isInvalid(email())).toBe(false);
+      expectFieldError(password());
+      expect(document.activeElement).toBe(password());
+    });
+
+    it('the 401 message is a general error in role="alert", not a field error', async () => {
+      await fillAndSubmit();
+      flushProblem(expectRequest(httpMock, 'POST', LOGIN_URL), 401, 'invalid_credentials');
+      await settle(fixture);
+
+      expect(alertText(el)).toContain('E-mail ou senha inválidos');
+      expect(describedErrorText(email())).not.toContain('E-mail ou senha inválidos');
+      expect(describedErrorText(password())).not.toContain('E-mail ou senha inválidos');
+    });
   });
 });

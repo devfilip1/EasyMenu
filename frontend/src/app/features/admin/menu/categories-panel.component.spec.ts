@@ -4,6 +4,9 @@ import {
   alertText,
   button,
   byLabel,
+  expectFieldError,
+  isRequired,
+  queryButton,
   rowWith,
   rows,
   textOf,
@@ -181,6 +184,47 @@ describe('CategoriesPanelComponent', () => {
 
       expect(alertText(el)).toContain('Remova ou mova os itens antes de excluir a categoria');
       expect(order()).toContain('Drinks');
+    });
+  });
+
+  describe('form accessibility (convention)', () => {
+    it('the new category name is required', () => {
+      expect(isRequired(byLabel(el, /nova categoria/i))).toBe(true);
+    });
+
+    it('the inline rename input is required and, when left blank, linked to its error', async () => {
+      button(rowWith(el, ROW, 'Drinks'), /renomear/i).click();
+      await settle(fixture);
+      const row = rows(el, ROW)[0];
+      const input = row.querySelector<HTMLInputElement>('input')!;
+      expect(isRequired(input)).toBe(true);
+
+      typeInto(input, '   ');
+      await settle(fixture);
+      const save = queryButton(row, /salvar/i);
+      if (save && !save.disabled) {
+        save.click();
+        await settle(fixture);
+      }
+
+      expectNoRequest(httpMock, 'PUT', apiUrl(renameCategory.PATH, { id: DRINKS.id }));
+      expectFieldError(input);
+      expect(document.activeElement).toBe(input);
+    });
+
+    it('409 category_not_empty is a general error in role="alert"', async () => {
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      button(rowWith(el, ROW, 'Drinks'), /excluir/i).click();
+      await settle(fixture);
+      flushProblem(
+        expectRequest(httpMock, 'DELETE', apiUrl(deleteCategory.PATH, { id: DRINKS.id })),
+        409,
+        'category_not_empty',
+      );
+      await settle(fixture);
+
+      expect(alertText(el)).toContain('Remova ou mova os itens antes de excluir a categoria');
     });
   });
 });

@@ -146,3 +146,84 @@ export function region(root: ParentNode, name: string): HTMLElement {
   if (!found) throw new Error(`No <section> named "${name}" (aria-label or aria-labelledby)`);
   return found;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Form accessibility convention (tasks.md, "Acessibilidade de formulários"). Every form spec
+// MUST use these helpers:
+// - each field error has its own `id` and the control points to it via `aria-describedby`,
+//   with `aria-invalid="true"` while invalid;
+// - required controls have `aria-required="true"`; the <form> has `novalidate`;
+// - server errors tied to a field show up in that field's error element, inside an
+//   `aria-live="polite"` region; general form errors use `role="alert"`;
+// - submitting an invalid form moves focus to the first invalid control (DOM order).
+
+/** Elements referenced by the control's `aria-describedby` (missing ids are an error). */
+export function describedBy(control: Element): HTMLElement[] {
+  const ids = (control.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+  return ids.map((id) => {
+    const target = control.ownerDocument.getElementById(id);
+    if (!target) throw new Error(`aria-describedby points to missing id "${id}"`);
+    return target;
+  });
+}
+
+/** Text of the error element(s) the control describes itself with. */
+export function describedErrorText(control: Element): string {
+  return describedBy(control)
+    .map((el) => textOf(el))
+    .join(' ')
+    .trim();
+}
+
+/** Texts of the control's aria-describedby targets, keyed by id (e.g. a hint before any error). */
+export type DescribedSnapshot = Map<string, string>;
+
+export function snapshotDescribedBy(control: Element): DescribedSnapshot {
+  const ids = (control.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+  return new Map(ids.map((id) => [id, textOf(control.ownerDocument.getElementById(id))]));
+}
+
+/**
+ * Asserts the control is flagged invalid and linked via aria-describedby to an error message.
+ * - with `message`: some described element contains it;
+ * - without `message`: pass the `baseline` taken while no error was shown (e.g. right after
+ *   render); the error must be a described element that did not exist or was empty then, so a
+ *   hint (e.g. "Seu cardápio ficará em /m/…", whose text follows the value) is never mistaken
+ *   for the error.
+ * Returns the error element.
+ */
+export function expectFieldError(
+  control: Element,
+  message?: string,
+  baseline: DescribedSnapshot = new Map(),
+): HTMLElement {
+  if (!isInvalid(control)) throw new Error('Expected aria-invalid="true" on the control');
+  const described = describedBy(control);
+  if (described.length === 0) throw new Error('Invalid control has no aria-describedby');
+  const error = described.find((el) => {
+    const text = textOf(el);
+    if (text.length === 0) return false;
+    if (message) return text.includes(message);
+    return !baseline.get(el.id);
+  });
+  if (!error) {
+    throw new Error(
+      `No aria-describedby error ${message ? `containing "${message}"` : 'besides the baseline hint'}; got "${describedErrorText(control)}"`,
+    );
+  }
+  return error;
+}
+
+export function isRequired(control: Element): boolean {
+  return control.getAttribute('aria-required') === 'true';
+}
+
+/** True when the element is inside (or is) an `aria-live="polite"` region. */
+export function inPoliteLiveRegion(el: Element): boolean {
+  return el.closest('[aria-live="polite"]') !== null;
+}
+
+/** First control flagged invalid, in DOM order. */
+export function firstInvalidControl(root: ParentNode): HTMLElement | null {
+  return root.querySelector<HTMLElement>('input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"]');
+}

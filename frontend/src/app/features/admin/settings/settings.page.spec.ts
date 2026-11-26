@@ -3,8 +3,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   button,
   byLabel,
+  expectFieldError,
   fieldOf,
+  inPoliteLiveRegion,
   isInvalid,
+  isRequired,
   textOf,
   typeInto,
 } from '../../../../testing/dom';
@@ -109,5 +112,38 @@ describe('SettingsPage', () => {
 
     expect(textOf(fieldOf(nameInput()))).toContain('O nome não pode conter apenas espaços.');
     expect(isInvalid(nameInput())).toBe(true);
+  });
+
+  describe('form accessibility (convention)', () => {
+    it('marks the name as required and the form as novalidate', () => {
+      expect(isRequired(nameInput())).toBe(true);
+      expect(el.querySelector('form')?.hasAttribute('novalidate')).toBe(true);
+    });
+
+    it('links the invalid name to its error message and focuses it', async () => {
+      typeInto(nameInput(), 'A');
+      await settle(fixture);
+      save().focus();
+      save().click();
+      await settle(fixture);
+
+      expectNoRequest(httpMock, 'PUT', PUT_URL);
+      expectFieldError(nameInput());
+      expect(document.activeElement).toBe(nameInput());
+    });
+
+    it('400 validation_failed errors.name is the name field error, in a polite live region', async () => {
+      typeInto(nameInput(), 'Nome válido');
+      await settle(fixture);
+      save().click();
+      await settle(fixture);
+      flushProblem(expectRequest(httpMock, 'PUT', PUT_URL), 400, 'validation_failed', {
+        errors: { name: ['O nome não pode conter apenas espaços.'] },
+      });
+      await settle(fixture);
+
+      const error = expectFieldError(nameInput(), 'O nome não pode conter apenas espaços.');
+      expect(inPoliteLiveRegion(error)).toBe(true);
+    });
   });
 });
