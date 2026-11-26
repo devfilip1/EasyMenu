@@ -213,7 +213,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 > `OpenApiContractTests` (back) e o `tsc` do front (`Record<ErrorCode, string>` em `problem.ts`)
 > até T107 e T109. São tarefas curtas e têm prioridade.
 
-- [ ] T106 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Auth/AuthErrorBodyTests.cs` (depende de: T008):
+- [X] T106 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Auth/AuthErrorBodyTests.cs` (depende de: T008):
   - `GET /api/auth/me` sem token dá 401 `application/problem+json` com `status=401`, `code=unauthorized` e header `WWW-Authenticate` começando com `Bearer`;
   - o mesmo vale para token adulterado, expirado (`Factory.Clock`) e de usuário desativado;
   - token de **kitchen** num endpoint `OwnerOnly` dá 403 `code=forbidden` (usar um controller de teste em `WithTestControllers`, ao lado de `ErrorTestController`, com `[Authorize(Policy = "OwnerOnly")]`);
@@ -227,7 +227,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
     - `forbidden` → "Você não tem permissão para esta ação.";
   - ampliar `frontend/src/app/core/auth/auth.interceptor.spec.ts`: 403 `forbidden` **não** faz logout (só o 401 faz).
 - [ ] T109 [IMPL-FRONT] Mensagens em `frontend/src/app/core/errors/problem.ts` e ajuste no interceptor, se preciso (depende de: T018, T108). T108 verde, com `npm run build` verde.
-- [ ] T110 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/UniqueViolationTests.cs` (depende de: T007):
+- [X] T110 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/UniqueViolationTests.cs` (depende de: T007):
   - **determinístico**: inserir direto via `AppDbContext` dois `User` com o mesmo `NormalizedEmail` lança `UniqueConstraintViolationException` com `ConstraintName == "ix_users_normalized_email"`; idem para dois `Establishment` com o mesmo slug (`ix_establishments_slug`);
   - **concorrência**: 10 rodadas de 2 `POST /api/auth/register-owner` simultâneos (`Task.WhenAll`) com o mesmo e-mail e slugs diferentes dão exatamente um 201 e um 409 `email_taken` por rodada, nunca 500; idem com o mesmo slug e e-mails diferentes, que dão 409 `slug_taken`.
 - [ ] T111 [IMPL-BACK] Tradução de 23505 (depende de: T012, T014, T110). T110 verde.
