@@ -444,7 +444,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
 
 ### Fatia 2a: Cardápio público (back)
 
-- [ ] T043 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/PublicMenu/PublicMenuEndpointTests.cs` (depende de: T025, para o `CreateMenuAsync`):
+- [X] T043 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/PublicMenu/PublicMenuEndpointTests.cs` (depende de: T025, para o `CreateMenuAsync`):
   - sem token dá 200;
   - categorias e itens na ordem do Dono;
   - a categoria só com itens esgotados **não** aparece;
