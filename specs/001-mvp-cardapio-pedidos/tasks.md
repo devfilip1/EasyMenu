@@ -58,6 +58,18 @@ tarefa `[TEST-*]` anterior.
   - passos de **build, imagem e deploy** são do Dev do lado correspondente;
   - mudança **estrutural** (novos gatilhos, permissões, cache, matriz, reorganizar jobs) é do
     Arquiteto.
+- **Acessibilidade de formulários** (padrão para **todo** form, revisão US1; os specs novos MUST
+  cobrir e a implementação MUST seguir):
+  - cada mensagem de erro de campo tem `id` próprio, e o input aponta para ela via
+    `aria-describedby`, com `aria-invalid="true"` enquanto inválido;
+  - campos obrigatórios têm `aria-required="true"`; o `<form>` usa `novalidate` e a validação é
+    do Angular;
+  - erro do servidor associado a um campo (ex.: 409 `slug_taken`/`email_taken`, `errors` de
+    `validation_failed`) aparece no elemento de erro daquele campo, dentro de uma live region
+    (`aria-live="polite"`); erro geral do form em `role="alert"`;
+  - ao enviar um form inválido, o foco vai para o **primeiro** controle inválido, na ordem do DOM;
+  - helpers compartilhados em `frontend/src/app/shared/forms/` (ex.: `focusFirstInvalid(form, host)`
+    e o id determinístico de erro por campo) evitam repetição.
 - Tarefas T094+ foram acrescentadas após a revisão da Coruja. Os IDs não seguem a ordem física;
   vale a posição no arquivo e o "depende de".
 
@@ -429,6 +441,34 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - logout e login de novo.
 
   Commit vermelho; fica verde quando T029 e T040 estiverem prontos.
+
+### Fatia 1h: Ajustes da revisão parcial da US1 (Coruja)
+
+- [ ] T118 [P] [US1] [TEST-FRONT] Acessibilidade dos forms já implementados (depende de: T030, T031, T033, T035). Ampliar `frontend/src/app/features/auth/login.page.spec.ts`, `register.page.spec.ts`, `frontend/src/app/features/admin/settings/settings.page.spec.ts` e `frontend/src/app/features/admin/menu/categories-panel.component.spec.ts` com o padrão das convenções:
+  - campo inválido e tocado: `aria-invalid="true"` e `aria-describedby` contendo o `id` do elemento que exibe a mensagem;
+  - obrigatórios com `aria-required="true"`;
+  - 409 `slug_taken` e `email_taken` no cadastro, e 400 `validation_failed` com `errors.name` em settings, aparecem no erro do campo, dentro de um ancestral com `aria-live="polite"`;
+  - erro geral de login (401) em `role="alert"`;
+  - enviar com campos inválidos deixa `document.activeElement` no primeiro controle inválido.
+- [ ] T119 [US1] [IMPL-FRONT] Criar `frontend/src/app/shared/forms/{form-a11y.ts,field-error.component.ts}` e aplicar o padrão em `features/auth/{login,register}.page.ts`, `features/admin/settings/settings.page.ts` e `features/admin/menu/categories-panel.component.ts` (depende de: T032, T034, T036, T118). T118 verde.
+- [ ] T120 [US1] [TEST-FRONT] Acessibilidade do form de item: ampliar `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts` com o mesmo padrão (depende de: T040, para não mexer no spec enquanto T040 está em implementação). Cobrir:
+  - nome, preço, setor e categoria obrigatórios;
+  - erro de promoção ligado ao campo de promoção;
+  - erros de foto (`invalid_image_type`/`image_too_large`) ligados ao input de arquivo, em live region;
+  - foco no primeiro inválido.
+- [ ] T121 [US1] [IMPL-FRONT] Aplicar `shared/forms` em `frontend/src/app/features/admin/menu/menu-item-form.component.ts` (depende de: T119, T120). T120 verde.
+- [ ] T122 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/TenantForeignKeyTests.cs` (depende de: T026). Com A e B cadastrados e a categoria de A criada via API, usar SQL direto (`ExecuteSqlRawAsync`, sem passar pelo tenant da aplicação):
+  - inserir em `menu_items` uma linha com `establishment_id` de B e `category_id` da categoria de A lança `PostgresException` com `SqlState == "23503"`;
+  - a mesma inserção com `establishment_id` de A é aceita;
+  - `UPDATE menu_items SET establishment_id = B` num item de A também falha com 23503.
+- [ ] T123 [US1] [IMPL-BACK] FK composta (depende de: T026, T122). T122 verde e suíte inteira verde (as migrations aplicam do zero no Testcontainers).
+  - `CategoryConfiguration`: `HasAlternateKey(c => new { c.EstablishmentId, c.Id })`;
+  - `MenuItemConfiguration`: `HasOne<Category>().WithMany().HasForeignKey(i => new { i.EstablishmentId, i.CategoryId }).HasPrincipalKey(c => new { c.EstablishmentId, c.Id }).OnDelete(Restrict)`, no lugar da FK simples;
+  - migration `CompositeTenantForeignKeys` em `backend/src/EasyMenu.Infrastructure/Persistence/Migrations/`.
+- [ ] T124 [P] [US1] [TEST-BACK] `MenuItem.Description` normalizada (depende de: T024).
+  - Ampliar `backend/tests/EasyMenu.UnitTests/Domain/Menu/MenuItemTests.cs`: `"  Gelada  "` vira `"Gelada"`; `""`, `"   "` e `null` viram `null`, tanto na criação quanto em `Update`; o limite de 500 caracteres vale **após** o trim.
+  - Ampliar `backend/tests/EasyMenu.IntegrationTests/Menu/MenuItemsEndpointsTests.cs`: `POST` com `description: "   "` dá 201 sem a propriedade `description` no JSON.
+- [ ] T125 [US1] [IMPL-BACK] Normalização de `Description` em `backend/src/EasyMenu.Domain/Menu/MenuItem.cs` (criação e `Update`) (depende de: T026, T124). T124 verde.
 
 **Checkpoint US1**: T042 verde, e a fatia back inteira verde.
 
@@ -850,6 +890,11 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 - **Ajustes da revisão da Foundational (T114–T117)**:
   - T114→T115 (chave do rate limit) dependem de T094/T095;
   - T116→T117 (mesma origem via nginx) dependem de T104/T105 e são obrigatórias antes do deploy, junto com T113.
+- **Ajustes da revisão parcial da US1 (T118–T125)**:
+  - T118→T119 (a11y de login/cadastro/settings/categorias) podem começar já;
+  - T120→T121 (a11y do form de item) só depois de T040;
+  - T122→T123 (FK composta) e T124→T125 (`Description`) dependem só da fatia back da US1, que já está pronta;
+  - posição concorrente: risco aceito (research R19), sem task.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
 
@@ -869,6 +914,7 @@ depois vem a próxima fatia. O Dev nunca começa uma fatia cujo teste não estej
 | 5 | T071, **T100**, T081 | T072, **T101**, T082 | T073, T075, T077, T078, T085, T086 | T074, T076, T087 |
 | 6 | T089, T090 | T093 | T088, T091, **T102**, **T104**, **T116** | T092, **T103**, **T105**, **T117** |
 | já (prioridade) | **T106**, **T110**, **T112**, **T114** | **T107**, **T111**, **T113**, **T115** | **T108**, **T116** | **T109**, **T117** |
+| revisão US1 | **T122**, **T124** | **T123**, **T125** | **T118**, **T120** (após T040) | **T119**, **T121** |
 
 ## Parallel Examples
 
@@ -910,10 +956,10 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 |---|---|---|---|---|---|
 | Setup | 4 | 1 | 2 | 0 | 1 |
 | Foundational | 26 | 10 | 11 | 3 | 2 |
-| US1 | 26 | 8 | 5 | 9 | 4 |
+| US1 | 34 | 10 | 7 | 11 | 6 |
 | US2 | 18 | 6 | 3 | 5 | 4 |
 | US3 | 12 | 3 | 2 | 5 | 2 |
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
 | Polish | 11 | 2 | 1 | 4 | 4 |
-| **Total** | **117** | **35** | **29** | **33** | **20** |
+| **Total** | **125** | **37** | **31** | **35** | **22** |

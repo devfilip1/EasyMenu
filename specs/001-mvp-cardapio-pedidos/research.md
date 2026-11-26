@@ -261,3 +261,20 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
 - **Alternatives**: `apiUrl` configurável em runtime (um `config.json` carregado no bootstrap,
   com CORS e CSP listando a origem da API): mais peças móveis e CSP mais larga, sem benefício no
   MVP. `apiUrl` fixado no build obrigaria a gerar uma imagem por ambiente.
+
+## R19. Position com criação concorrente (revisão US1): risco aceito
+
+- **Situação**: criar categoria ou item calcula `Position = max + 1` sem lock. Duas criações
+  simultâneas no mesmo escopo podem gravar a mesma posição.
+- **Decision**: **risco aceito no MVP**, sem lock, índice único ou retry.
+- **Rationale**:
+  - quem cria é um único Dono, pela UI, uma ação por vez, então a concorrência real é rara;
+  - o efeito é só cosmético: dois itens empatados, com a ordem relativa entre eles indefinida;
+  - não há perda de dados nem quebra de invariante de dinheiro ou tenant;
+  - o Dono corrige reordenando, porque o `PUT …/order` reescreve todas as posições
+    (auto-reparo);
+  - um índice único em `(establishment_id, [category_id,] position)` tornaria a reordenação mais
+    cara (posições temporárias ou constraint `DEFERRABLE`) e exigiria retry na criação.
+- **Revisitar quando**: houver múltiplos editores por estabelecimento ou importação em lote. A
+  solução seria `pg_advisory_xact_lock` por escopo na criação, ou uma constraint única
+  `DEFERRABLE INITIALLY DEFERRED`.

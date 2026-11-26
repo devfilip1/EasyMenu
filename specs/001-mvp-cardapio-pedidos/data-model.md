@@ -14,6 +14,13 @@ Convenções:
   projeto), com os mesmos valores do contrato.
 - Toda entidade marcada com **[T]** implementa `ITenantOwned` e recebe o global query filter de
   tenant (research R3).
+- **FK entre duas entidades [T] MUST ser composta com o tenant** (defesa em profundidade, revisão
+  US1): a principal ganha a alternate key `(establishment_id, id)`, e a dependente referencia
+  `(establishment_id, x_id)`. Assim o banco recusa, com 23503, um item apontando para a categoria
+  de outro estabelecimento, mesmo se a aplicação errar. Hoje se aplica a
+  `menu_items → categories`. Nos pedidos, `orders` só referencia `establishments`, e
+  `order_items`/`order_parts` dependem de `orders` (não são [T]); `OrderItem.MenuItemId` continua
+  sem FK (snapshot). Toda FK futura entre entidades [T] segue esta regra.
 
 ## Diagrama
 
@@ -85,9 +92,9 @@ Regras:
 |---|---|---|
 | Id | Guid | PK |
 | EstablishmentId | Guid | FK |
-| CategoryId | Guid | FK → Category (Restrict); a categoria precisa ser do mesmo tenant |
+| CategoryId | Guid | FK **composta** `(establishment_id, category_id)` → `categories(establishment_id, id)` (Restrict); o banco garante o mesmo tenant |
 | Name | string(100) | obrigatório, 1–100 caracteres |
-| Description | string(500)? | opcional |
+| Description | string(500)? | opcional; trim, e vazio ou só espaços vira `null` (na criação e na edição) |
 | PhotoPath | string(300)? | caminho relativo no storage (`{establishmentId}/{guid}.jpg`) |
 | PriceCents | long | > 0 e ≤ 10.000.000 (R$ 100 mil, teto de sanidade) |
 | PromotionalPriceCents | long? | se presente: > 0 e < PriceCents (FR-008, constituição IV) |
