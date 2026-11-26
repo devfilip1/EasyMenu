@@ -13,7 +13,7 @@ namespace EasyMenu.IntegrationTests.Infrastructure;
 /// Scenario helpers for integration tests. Each test task extends it with the helpers it needs.
 /// Request/response DTOs here mirror contracts/openapi.yaml (enums as snake_case strings).
 /// </summary>
-public sealed class ApiDriver(EasyMenuApiFactory factory) : IDisposable
+public sealed partial class ApiDriver(EasyMenuApiFactory factory) : IDisposable
 {
     public const string DefaultPassword = "Senha@1234";
 

@@ -216,7 +216,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1a: Estabelecimento (back)
 
-- [ ] T019 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Establishment/EstablishmentEndpointsTests.cs`:
+- [X] T019 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Establishment/EstablishmentEndpointsTests.cs`:
   - `GET /api/establishment` devolve o próprio estabelecimento;
   - `PUT` renomeia, e o slug não muda nem com `slug` no body;
   - nome inválido dá 400;
