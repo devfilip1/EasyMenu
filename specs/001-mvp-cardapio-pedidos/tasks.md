@@ -788,7 +788,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - **isolamento**: B desativar a cozinha de A dá 404.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): as 3 operações `/api/staff...`.
-- [ ] T080 [US5] [IMPL-BACK] `backend/src/EasyMenu.Application/Staff/StaffService.cs` e `backend/src/EasyMenu.Api/Controllers/StaffController.cs` (`OwnerOnly`) (depende de: T015, T079). T079 verde.
+- [X] T080 [US5] [IMPL-BACK] `backend/src/EasyMenu.Application/Staff/StaffService.cs` e `backend/src/EasyMenu.Api/Controllers/StaffController.cs` (`OwnerOnly`) (depende de: T015, T079). T079 verde.
 
 ### Fatia 5b: Corte no tempo real (back)
 
