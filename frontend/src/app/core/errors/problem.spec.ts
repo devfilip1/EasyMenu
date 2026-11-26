@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ERROR_CODE } from '../../api/generated/models/error-code-array';
 import { ProblemDetails } from '../../api/generated/models/problem-details';
-import { problemCode, problemMessage } from './problem';
+import { errorCode, problemCode, problemMessage } from './problem';
 
 describe('problemCode', () => {
   it('extracts the code from a ProblemDetails body', () => {
@@ -67,5 +67,39 @@ describe('problemMessage', () => {
     expect(generic.trim().length).toBeGreaterThan(0);
     expect(problemMessage(undefined)).toBe(generic);
     expect(ERROR_CODE.map((code) => problemMessage(code))).not.toContain(generic);
+  });
+});
+
+describe('errorCode (T126)', () => {
+  const problem = (status: number, code: ProblemDetails['code']): ProblemDetails => ({ status, code });
+
+  it.each([
+    ['an empty body', ''],
+    ['a text body', '<html>Not Found</html>'],
+    ['a null body', null],
+  ])('a 404 with %s gives the notFound fallback', (_case, body) => {
+    const error = new HttpErrorResponse({ status: 404, error: body });
+
+    expect(errorCode(error, 'order_not_found')).toBe('order_not_found');
+  });
+
+  it('a 404 with a ProblemDetails body gives its code, not the fallback', () => {
+    const error = new HttpErrorResponse({ status: 404, error: problem(404, 'category_not_found') });
+
+    expect(errorCode(error, 'not_found')).toBe('category_not_found');
+  });
+
+  it.each([0, 400, 500])('status %i without ProblemDetails gives null even with notFound', (status) => {
+    const error = new HttpErrorResponse({ status, error: null });
+
+    expect(errorCode(error, 'not_found')).toBeNull();
+  });
+
+  it('without notFound, a 404 without body gives null', () => {
+    expect(errorCode(new HttpErrorResponse({ status: 404, error: null }))).toBeNull();
+  });
+
+  it('non-HTTP errors give null', () => {
+    expect(errorCode(new Error('boom'), 'not_found')).toBeNull();
   });
 });
