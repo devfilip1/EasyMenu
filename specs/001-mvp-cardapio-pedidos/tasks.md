@@ -718,7 +718,7 @@ recarregar, junto com o aviso de retirada.
   - repete a inscrição e emite resync em `onreconnected`;
   - expõe `OrderUpdated`;
   - `stop()` ao destruir.
-- [ ] T074 [US4] [IMPL-FRONT] `frontend/src/app/core/realtime/order-realtime.service.ts` (depende de: T065, T073). T073 verde.
+- [X] T074 [US4] [IMPL-FRONT] `frontend/src/app/core/realtime/order-realtime.service.ts` (depende de: T065, T073). T073 verde.
 - [X] T075 [P] [US4] [TEST-FRONT] Ampliar `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts` e `frontend/src/app/features/public-menu/public-menu.page.spec.ts` (depende de: T056):
   - rótulos por status: paid "Pago / aguardando preparo", in_preparation "Em preparo", picked_up "Retirado";
   - `ready` mostra o banner destacado "Seu pedido está pronto — retire no balcão" com o código (`role="alert"`);
