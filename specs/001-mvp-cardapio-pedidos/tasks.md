@@ -766,7 +766,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ### Fatia 5b: Corte no tempo real (back)
 
-- [ ] T081 [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Realtime/KitchenHubDeactivationTests.cs` (depende de: T062, T079): com a conexão do hub da cozinha aberta, a desativação fecha a conexão (evento `Closed` em ≤ 5 s), e uma nova conexão com o mesmo token falha.
+- [X] T081 [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Realtime/KitchenHubDeactivationTests.cs` (depende de: T062, T079): com a conexão do hub da cozinha aberta, a desativação fecha a conexão (evento `Closed` em ≤ 5 s), e uma nova conexão com o mesmo token falha.
 - [ ] T082 [US5] [IMPL-BACK] Corte das conexões (depende de: T063, T080, T081). T081 verde.
   - `backend/src/EasyMenu.Application/Abstractions/ISessionTerminator.cs`;
   - `backend/src/EasyMenu.Api/Realtime/HubConnectionTracker.cs`: registra as conexões do `KitchenHub` por `UserId` em `OnConnected`/`OnDisconnected` e aborta via `HubCallerContext.Abort()`;
