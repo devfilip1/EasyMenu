@@ -245,7 +245,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 > Sem isto, atrás do proxy (nginx do front, R18) todos os clientes dividem a partição de rate limit
 > do IP do proxy. Nenhum deploy sai sem T113 verde.
 
-- [ ] T112 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/ForwardedHeadersTests.cs` (depende de: T094). Usa um `IStartupFilter` de teste que fixa `Connection.RemoteIpAddress = 127.0.0.1` e `WithRateLimits(2)`:
+- [X] T112 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/ForwardedHeadersTests.cs` (depende de: T094). Usa um `IStartupFilter` de teste que fixa `Connection.RemoteIpAddress = 127.0.0.1` e `WithRateLimits(2)`:
   - **com** `ForwardedHeaders:KnownProxies:0=127.0.0.1`: 3 logins com `X-Forwarded-For: 203.0.113.1` fazem o 3º dar 429, enquanto `203.0.113.2` ainda não é limitado (partição pelo IP real do cliente);
   - **sem** proxy configurado (padrão): `X-Forwarded-For` é ignorado; 3 logins com XFF diferentes fazem o 3º dar 429 (spoofing não fura o limite);
   - **proxy não confiável**: com `KnownProxies:0=10.0.0.1` (diferente do `RemoteIpAddress` 127.0.0.1), o XFF também é ignorado;
