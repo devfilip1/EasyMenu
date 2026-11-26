@@ -1,10 +1,12 @@
 using System.Reflection;
 using EasyMenu.Application.Abstractions;
+using EasyMenu.Application.Common;
 using EasyMenu.Domain.Common;
 using EasyMenu.Domain.Establishments;
 using EasyMenu.Domain.Menu;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace EasyMenu.Infrastructure.Persistence;
 
@@ -24,6 +26,36 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
 
     /// <summary>Read by the tenant query filter on every query (null = anonymous: tenant data is hidden).</summary>
     private Guid? CurrentEstablishmentId => tenant.EstablishmentId;
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        try
+        {
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+        catch (DbUpdateException exception) when (UniqueViolation(exception) is { } violation)
+        {
+            throw violation;
+        }
+    }
+
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        catch (DbUpdateException exception) when (UniqueViolation(exception) is { } violation)
+        {
+            throw violation;
+        }
+    }
+
+    // PostgreSQL 23505 (unique_violation) → UniqueConstraintViolationException with the index name.
+    private static UniqueConstraintViolationException? UniqueViolation(DbUpdateException exception) =>
+        exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } name }
+            ? new UniqueConstraintViolationException(name, exception)
+            : null;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

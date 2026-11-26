@@ -19,6 +19,9 @@ public sealed class ProblemDetailsExceptionHandler(IProblemDetailsService proble
         var problem = exception switch
         {
             DomainException domain => FromDomain(domain),
+            // A race that slipped past the application checks; unknown constraints stay a logged 500.
+            UniqueConstraintViolationException { ConstraintName: var name } when UniqueConstraints.ErrorCodeFor(name) is { } code
+                => Create(StatusFor(code), code),
             _ when FindPayloadTooLarge(exception) is not null => PayloadTooLarge(httpContext),
             _ => null,
         };

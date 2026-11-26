@@ -242,7 +242,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 - [X] T110 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/UniqueViolationTests.cs` (depende de: T007):
   - **determinístico**: inserir direto via `AppDbContext` dois `User` com o mesmo `NormalizedEmail` lança `UniqueConstraintViolationException` com `ConstraintName == "ix_users_normalized_email"`; idem para dois `Establishment` com o mesmo slug (`ix_establishments_slug`);
   - **concorrência**: 10 rodadas de 2 `POST /api/auth/register-owner` simultâneos (`Task.WhenAll`) com o mesmo e-mail e slugs diferentes dão exatamente um 201 e um 409 `email_taken` por rodada, nunca 500; idem com o mesmo slug e e-mails diferentes, que dão 409 `slug_taken`.
-- [ ] T111 [IMPL-BACK] Tradução de 23505 (depende de: T012, T014, T110). T110 verde.
+- [X] T111 [IMPL-BACK] Tradução de 23505 (depende de: T012, T014, T110). T110 verde.
   - `backend/src/EasyMenu.Application/Common/{UniqueConstraintViolationException.cs,UniqueConstraints.cs}`;
   - override de `SaveChangesAsync` em `AppDbContext`: `DbUpdateException` com `PostgresException.SqlState == "23505"` vira `UniqueConstraintViolationException(ConstraintName)`;
   - `ProblemDetailsExceptionHandler`: constraint de e-mail vira 409 `email_taken` e de slug vira 409 `slug_taken`; desconhecida continua 500 com log.
