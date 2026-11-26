@@ -496,7 +496,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - dados de B não aparecem no cardápio de A.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `GET /api/public/establishments/{slug}/menu`.
-- [ ] T044 [US2] [IMPL-BACK] `backend/src/EasyMenu.Application/Menu/PublicMenuService.cs` (com `IgnoreQueryFilters` + filtro por slug) e `backend/src/EasyMenu.Api/Controllers/PublicMenuController.cs` (`[AllowAnonymous]`) (depende de: T026, T043). T043 verde.
+- [X] T044 [US2] [IMPL-BACK] `backend/src/EasyMenu.Application/Menu/PublicMenuService.cs` (com `IgnoreQueryFilters` + filtro por slug) e `backend/src/EasyMenu.Api/Controllers/PublicMenuController.cs` (`[AllowAnonymous]`) (depende de: T026, T043). T043 verde.
 
 ### Fatia 2b: Compra (back)
 

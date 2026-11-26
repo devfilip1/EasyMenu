@@ -164,13 +164,16 @@ public sealed class MenuItemService(IAppDbContext db, ITenantContext tenant, IIm
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>Photo URL relative to the API root, or null (default image).</summary>
+    public static string? PhotoUrlOf(MenuItem item) => item.PhotoPath is null ? null : MediaPathPrefix + item.PhotoPath;
+
     public static MenuItemResponse ToResponse(MenuItem item) => new()
     {
         Id = item.Id,
         CategoryId = item.CategoryId,
         Name = item.Name,
         Description = item.Description,
-        PhotoUrl = item.PhotoPath is null ? null : MediaPathPrefix + item.PhotoPath,
+        PhotoUrl = PhotoUrlOf(item),
         PriceCents = item.PriceCents,
         PromotionalPriceCents = item.PromotionalPriceCents,
         EffectivePriceCents = item.EffectivePriceCents,

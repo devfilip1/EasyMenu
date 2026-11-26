@@ -439,7 +439,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Slug"
     get:
-      x-pending: true
       tags: [PublicMenu]
       operationId: getPublicMenu
       summary: Cardápio público (FR-012, FR-013).
