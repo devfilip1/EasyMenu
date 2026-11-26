@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { guestGuard, kitchenGuard, ownerGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   {
@@ -16,6 +17,7 @@ export const routes: Routes = [
   {
     path: 'admin',
     title: 'Admin',
+    canActivate: [ownerGuard],
     loadComponent: () => import('./features/admin/admin.page').then((m) => m.AdminPage),
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'cardapio' },
@@ -52,16 +54,19 @@ export const routes: Routes = [
   {
     path: 'cozinha',
     title: 'Cozinha',
+    canActivate: [kitchenGuard],
     loadComponent: () => import('./features/kitchen/kitchen.page').then((m) => m.KitchenPage),
   },
   {
     path: 'login',
     title: 'Entrar',
+    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage),
   },
   {
     path: 'cadastro',
     title: 'Cadastro',
+    canActivate: [guestGuard],
     loadComponent: () => import('./features/auth/register.page').then((m) => m.RegisterPage),
   },
   { path: '', pathMatch: 'full', redirectTo: 'login' },

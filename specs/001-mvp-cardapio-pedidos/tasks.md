@@ -177,7 +177,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
 
 ### Frontend — implementação
 
-- [ ] T018 [IMPL-FRONT] Núcleo do front (depende de: T016; usa apenas o client gerado, sem esperar o back):
+- [X] T018 [IMPL-FRONT] Núcleo do front (depende de: T016; usa apenas o client gerado, sem esperar o back):
   - `frontend/src/app/core/auth/{auth.store.ts,auth.interceptor.ts,guards.ts}`;
   - `frontend/src/app/shared/{brl.pipe.ts,media-url.pipe.ts}` e `frontend/public/images/placeholder-item.svg`;
   - `frontend/src/app/core/errors/problem.ts`;
