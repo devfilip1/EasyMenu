@@ -127,7 +127,9 @@ export class CartStore {
 function readLines(slug: string): CartLine[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(cartStorageKey(slug)) ?? '[]');
-    return Array.isArray(value) ? value.filter(isCartLine) : [];
+    if (!Array.isArray(value)) return [];
+    // Storage is user-editable: keep integer lines only, then bring quantities back to 1..99.
+    return value.filter(isCartLine).map((line) => ({ ...line, quantity: clamp(line.quantity) }));
   } catch {
     return [];
   }

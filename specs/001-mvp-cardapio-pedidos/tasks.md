@@ -622,7 +622,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - quantidade não inteira (`'abc'`, `null`, `1.5`) **descarta** a linha;
   - JSON inválido no storage gera carrinho vazio, sem exceção;
   - o total recalculado reflete as quantidades corrigidas.
-- [ ] T133 [US2] [IMPL-FRONT] `clamp(1..99)` e validação de inteiro na leitura do `localStorage` em `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T132). T132 verde.
+- [X] T133 [US2] [IMPL-FRONT] `clamp(1..99)` e validação de inteiro na leitura do `localStorage` em `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T132). T132 verde.
 
 **Checkpoint US2**: T057 verde.
 
