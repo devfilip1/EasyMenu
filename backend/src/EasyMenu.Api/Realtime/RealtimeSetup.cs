@@ -17,6 +17,7 @@ public static class RealtimeSetup
     public static WebApplication MapApiHubs(this WebApplication app)
     {
         app.MapHub<KitchenHub>(KitchenHub.Path);
+        app.MapHub<OrdersHub>(OrdersHub.Path);
         return app;
     }
 }

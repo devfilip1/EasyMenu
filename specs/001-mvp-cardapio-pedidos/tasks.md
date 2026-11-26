@@ -733,7 +733,7 @@ recarregar, junto com o aviso de retirada.
   - **não** recebe evento quando a segunda parte entra em preparo e o status do pedido não muda;
   - um inscrito no pedido X não recebe eventos de Y;
   - conexão anônima permitida.
-- [ ] T072 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Hubs/OrdersHub.cs` (`SubscribeToOrder` com `IgnoreQueryFilters` por token) e publicação de `PublicOrder` no grupo `order:{token}` em `SignalROrderNotifier` quando o status do pedido muda, com `app.MapHub<OrdersHub>("/hubs/orders")` (depende de: T063, T071). T071 verde.
+- [X] T072 [US4] [IMPL-BACK] `backend/src/EasyMenu.Api/Hubs/OrdersHub.cs` (`SubscribeToOrder` com `IgnoreQueryFilters` por token) e publicação de `PublicOrder` no grupo `order:{token}` em `SignalROrderNotifier` quando o status do pedido muda, com `app.MapHub<OrdersHub>("/hubs/orders")` (depende de: T063, T071). T071 verde.
 - [X] T100 [US4] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/OrderSubscribeRateLimitTests.cs` (depende de: T071, T094), com `WithRateLimits(2)`:
   - a 3ª chamada de `SubscribeToOrder` na janela, mesmo com token válido, lança `HubException` com mensagem exatamente `rate_limited`;
   - a conexão continua `Connected`;
