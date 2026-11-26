@@ -460,7 +460,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
 
 ### Fatia 2b: Compra (back)
 
-- [ ] T045 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderPlaceTests.cs`:
+- [X] T045 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderPlaceTests.cs`:
   - o snapshot de nome, preço efetivo e setor por linha;
   - `SubtotalCents` e `TotalCents` (2×1990 + 1×3000 = 6980);
   - linhas repetidas são agrupadas;
@@ -469,7 +469,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - uma `OrderPart` `received` por setor presente (só bar → 1 parte);
   - `Status=paid`;
   - nome vazio ou só espaços vira null, e nome > 60 caracteres é recusado.
-- [ ] T046 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/PickupCodeTests.cs`: `PickupCode.Generate()` sempre bate com `^[2-9A-HJKMNP-Z]{4}$` (10.000 amostras) e nunca contém 0, O, 1, I ou L. `PublicToken.Generate()` tem 43 caracteres base64url.
+- [X] T046 [P] [US2] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/PickupCodeTests.cs`: `PickupCode.Generate()` sempre bate com `^[2-9A-HJKMNP-Z]{4}$` (10.000 amostras) e nunca contém 0, O, 1, I ou L. `PublicToken.Generate()` tem 43 caracteres base64url.
 - [ ] T047 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Checkout/PlaceOrderTests.cs` (depende de: T043):
   - 201 com `PublicOrder`: `status=paid`, total calculado com a promoção vigente, `pickupCode` no formato e `publicToken` com 43 caracteres;
   - campos extras no body (`totalCents`, `unitPriceCents`, `payment`) são ignorados;
