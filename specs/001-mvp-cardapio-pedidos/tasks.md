@@ -605,7 +605,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - 404 **com** ProblemDetails devolve o `code` do corpo, e não o fallback;
   - outros status sem ProblemDetails (0, 400, 500) devolvem `null` mesmo com `notFound` informado;
   - sem `notFound`, um 404 sem corpo devolve `null`.
-- [ ] T127 [US2] [IMPL-FRONT] Ajustar `errorCode` em `frontend/src/app/core/errors/problem.ts` até T126 ficar verde. Se já passar, registrar no commit que nenhuma mudança foi necessária (depende de: T126).
+- [X] T127 [US2] [IMPL-FRONT] Ajustar `errorCode` em `frontend/src/app/core/errors/problem.ts` até T126 ficar verde. Se já passar, registrar no commit que nenhuma mudança foi necessária (depende de: T126).
 - [X] T128 [P] [US2] [TEST-FRONT] Criar `frontend/src/app/shared/forms/field-error.component.spec.ts` (depende de: T119):
   - **sem erro**, o elemento da região existe no DOM, tem `aria-live="polite"` e não está oculto (sem `display: none`, `hidden` ou `aria-hidden`; checar com `getComputedStyle`);
   - ao passar a ter erro, o texto aparece **no mesmo nó** que já estava renderizado (mesma referência de elemento), para ser anunciado;
