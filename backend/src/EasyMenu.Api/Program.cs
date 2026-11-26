@@ -21,8 +21,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddControllers(options =>
+    {
         // ModelState keys (and so ProblemDetails.errors) use the JSON names: camelCase.
-        options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.CamelCase)))
+        options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.CamelCase));
+        // Enums in route and query use their snake_case names, as in JSON (e.g. ?status=picked_up).
+        options.ModelBinderProviders.Insert(0, new SnakeCaseEnumModelBinderProvider());
+    })
     .AddJsonOptions(options => ApiJsonOptions.Apply(options.JsonSerializerOptions))
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
 builder.Services.ConfigureHttpJsonOptions(options => ApiJsonOptions.Apply(options.SerializerOptions));

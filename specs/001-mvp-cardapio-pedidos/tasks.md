@@ -810,7 +810,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - **isolamento**: a lista de B não traz pedidos de A, e B em `GET /api/orders/{idDeA}` dá 404.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): as 2 operações `/api/orders...`.
-- [ ] T084 [US5] [IMPL-BACK] `backend/src/EasyMenu.Application/Orders/OrderQueryService.cs` e `backend/src/EasyMenu.Api/Controllers/OrdersController.cs` (`OwnerOnly`) (depende de: T049, T083). T083 verde.
+- [X] T084 [US5] [IMPL-BACK] `backend/src/EasyMenu.Application/Orders/OrderQueryService.cs` e `backend/src/EasyMenu.Api/Controllers/OrdersController.cs` (`OwnerOnly`) (depende de: T049, T083). T083 verde.
 
 ### Fatia 5d: Front
 

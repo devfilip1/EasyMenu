@@ -605,7 +605,6 @@ paths:
   # ---------------------------------------------------------------- Orders (Owner)
   /api/orders:
     get:
-      x-pending: true
       tags: [Orders]
       operationId: listOrders
       summary: Pedidos do estabelecimento, do mais recente ao mais antigo (FR-035).
@@ -636,7 +635,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/OrderId"
     get:
-      x-pending: true
       tags: [Orders]
       operationId: getOrder
       responses:
