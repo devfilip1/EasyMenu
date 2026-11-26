@@ -85,6 +85,18 @@ public sealed class ApiDriver(EasyMenuApiFactory factory) : IDisposable
         return new KitchenCredentials(user.Id, email, DefaultPassword);
     }
 
+    /// <summary>Overwrites the user's <c>SecurityStamp</c> directly in the database.</summary>
+    public Task SetSecurityStampAsync(Guid userId, string securityStamp) =>
+        WithDbAsync(db => db.Set<User>()
+            .Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.SecurityStamp, securityStamp)));
+
+    /// <summary>Sets <c>IsActive</c> directly in the database (bypasses domain rules, e.g. for the owner).</summary>
+    public Task SetUserActiveAsync(Guid userId, bool isActive) =>
+        WithDbAsync(db => db.Set<User>()
+            .Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.IsActive, isActive)));
+
     // ------------------------------------------------------------------ errors
 
     /// <summary>Reads an RFC 7807 response: HTTP status, media type, <c>code</c> and <c>errors</c>.</summary>

@@ -92,12 +92,12 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
     - `CreateClient(token)` (HttpClient com Bearer);
     - `CreateKitchenUserAsync(establishmentId)`, que insere o usuário direto no banco com `IPasswordHasher` e devolve as credenciais (isso desacopla as stories da US5);
     - `ReadProblemAsync(response)` → `(status, code, errors)`.
-- [ ] T007 [TEST-BACK] Testes de integração de auth em `backend/tests/EasyMenu.IntegrationTests/Auth/RegisterOwnerTests.cs`, `LoginTests.cs` e `CurrentUserTests.cs` (depende de: T006):
+- [X] T007 [TEST-BACK] Testes de integração de auth em `backend/tests/EasyMenu.IntegrationTests/Auth/RegisterOwnerTests.cs`, `LoginTests.cs` e `CurrentUserTests.cs` (depende de: T006):
   - **Cadastro**: 201 com `AuthResponse` cujo token funciona em `GET /api/auth/me`; 409 `slug_taken`; 409 `email_taken`, inclusive com e-mail em outra caixa; 400 para slug inválido, senha com menos de 8 caracteres ou e-mail inválido.
   - **Login**: 200 com `role=owner`; senha errada e e-mail inexistente dão **o mesmo** 401 `invalid_credentials`.
   - **Me**: 401 sem token; 200 com o estabelecimento.
   - Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `POST /api/auth/register-owner`, `POST /api/auth/login` e `GET /api/auth/me`.
-- [ ] T008 [TEST-BACK] Testes do pipeline de token em `backend/tests/EasyMenu.IntegrationTests/Auth/TokenValidationTests.cs` (depende de: T006). Todos os casos abaixo dão 401 em `GET /api/auth/me`:
+- [X] T008 [TEST-BACK] Testes do pipeline de token em `backend/tests/EasyMenu.IntegrationTests/Auth/TokenValidationTests.cs` (depende de: T006). Todos os casos abaixo dão 401 em `GET /api/auth/me`:
   - token adulterado;
   - token expirado (avançar o `FakeTimeProvider`);
   - token de usuário cujo `SecurityStamp` mudou no banco;
