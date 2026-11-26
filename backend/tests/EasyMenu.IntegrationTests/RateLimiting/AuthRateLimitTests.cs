@@ -92,6 +92,60 @@ public sealed class AuthRateLimitTests(EasyMenuApiFactory factory) : Integration
         register.StatusCode.Should().Be(HttpStatusCode.Created, await register.Content.ReadAsStringAsync());
     }
 
+    // ------------------------------------------------------------------ path variations (T114)
+
+    private Task<HttpResponseMessage> PostAsync(string path, object body) => Limited.PostAsJsonAsync(path, body, ApiDriver.Json);
+
+    private Task<HttpResponseMessage> LoginAtAsync(string path) =>
+        PostAsync(path, new LoginRequest("ninguem@bar.test", "SenhaErrada!1"));
+
+    private Task<HttpResponseMessage> RegisterAtAsync(string path) =>
+        PostAsync(path, new RegisterOwnerRequest(
+            Name: null,
+            Email: $"dono-{Guid.NewGuid():N}@bar.test",
+            Password: "Senha@1234",
+            EstablishmentName: "Bar",
+            Slug: $"bar-{Guid.NewGuid():N}"[..20]));
+
+    [Theory]
+    [InlineData("/api/auth/LOGIN")]
+    [InlineData("/api/auth/Login/")]
+    [InlineData("/API/Auth/login")]
+    public async Task Case_or_trailing_slash_variations_of_login_share_the_same_bucket(string variation)
+    {
+        for (var i = 0; i < PermitLimit; i++)
+        {
+            (await LoginAsync()).StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests, "call {0} is within the limit", i + 1);
+        }
+
+        await AssertRateLimitedAsync(await LoginAtAsync(variation));
+    }
+
+    [Fact]
+    public async Task Upper_case_register_owner_uses_the_register_bucket_not_the_login_bucket()
+    {
+        for (var i = 0; i < PermitLimit; i++)
+        {
+            await LoginAsync();
+        }
+
+        await AssertRateLimitedAsync(await LoginAsync());
+
+        var register = await RegisterAtAsync("/api/auth/REGISTER-OWNER");
+        register.StatusCode.Should().Be(HttpStatusCode.Created, await register.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Upper_case_register_owner_shares_the_bucket_of_register_owner()
+    {
+        for (var i = 0; i < PermitLimit; i++)
+        {
+            (await RegisterAsync()).StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests, "call {0} is within the limit", i + 1);
+        }
+
+        await AssertRateLimitedAsync(await RegisterAtAsync("/api/auth/REGISTER-OWNER"));
+    }
+
     [Fact]
     public async Task Health_is_never_rate_limited()
     {

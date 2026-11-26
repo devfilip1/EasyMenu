@@ -234,7 +234,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - `backend/src/EasyMenu.Application/Common/{UniqueConstraintViolationException.cs,UniqueConstraints.cs}`;
   - override de `SaveChangesAsync` em `AppDbContext`: `DbUpdateException` com `PostgresException.SqlState == "23505"` vira `UniqueConstraintViolationException(ConstraintName)`;
   - `ProblemDetailsExceptionHandler`: constraint de e-mail vira 409 `email_taken` e de slug vira 409 `slug_taken`; desconhecida continua 500 com log.
-- [ ] T114 [TEST-BACK] Ampliar `backend/tests/EasyMenu.IntegrationTests/RateLimiting/AuthRateLimitTests.cs` (depende de: T094), com `WithRateLimits(2)`:
+- [X] T114 [TEST-BACK] Ampliar `backend/tests/EasyMenu.IntegrationTests/RateLimiting/AuthRateLimitTests.cs` (depende de: T094), com `WithRateLimits(2)`:
   - 2 chamadas a `POST /api/auth/login` seguidas de `POST /api/auth/LOGIN` dão 429 (mesmo balde);
   - idem com `/api/auth/Login/` (barra final);
   - `/api/auth/REGISTER-OWNER` cai no balde do register, não no do login (as partições por endpoint continuam separadas).
