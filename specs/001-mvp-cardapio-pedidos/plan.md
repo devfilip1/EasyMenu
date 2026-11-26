@@ -262,6 +262,7 @@ Rotas finais do front:
 | Consulta ao usuário a cada request autenticado | Consulta por PK, desprezível na escala alvo. Cache só se medições indicarem. |
 | Divergência entre API e contrato (rota, status, schema) | `OpenApiContractTests` em nível de schema + `x-pending`. Para conformidade, cada action declara **todos** os status do contrato com `[ProducesResponseType<T>(status, contentType)]`, e erros usam um DTO `ApiProblem` igual ao schema `ProblemDetails` do contrato. |
 | `Position` duplicada em criações concorrentes de categoria ou item | Risco aceito no MVP (research R19): efeito só na ordem relativa, e a reordenação corrige. |
+| Fotos publicadas com metadados EXIF/GPS | Backlog pós-MVP (research R20): reencodar e remover metadados no upload. |
 | Fotos em disco local se perdem em deploy efêmero | Em produção, montar volume ou trocar por S3/R2 via `IImageStorage`. |
 
 ## Complexity Tracking

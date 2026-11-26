@@ -598,6 +598,32 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - um item que fica esgotado via API com o carrinho aberto faz a compra ser recusada com o nome do item.
 - [X] T058 [US2] [IMPL-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.ts`, versão estática (depende de: T056). T056 verde, e T057 verde junto com T049 e T055.
 
+### Fatia 2e: Ajustes da revisão 5 (US1 + front US2, Coruja)
+
+- [ ] T126 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/core/errors/problem.spec.ts` para `errorCode(err, notFound)` (introduzido em a54e11c sem spec) (depende de: T016):
+  - 404 **sem** corpo ProblemDetails (corpo vazio, string ou `null`) com `notFound` informado devolve esse código de fallback;
+  - 404 **com** ProblemDetails devolve o `code` do corpo, e não o fallback;
+  - outros status sem ProblemDetails (0, 400, 500) devolvem `null` mesmo com `notFound` informado;
+  - sem `notFound`, um 404 sem corpo devolve `null`.
+- [ ] T127 [US2] [IMPL-FRONT] Ajustar `errorCode` em `frontend/src/app/core/errors/problem.ts` até T126 ficar verde. Se já passar, registrar no commit que nenhuma mudança foi necessária (depende de: T126).
+- [ ] T128 [P] [US2] [TEST-FRONT] Criar `frontend/src/app/shared/forms/field-error.component.spec.ts` (depende de: T119):
+  - **sem erro**, o elemento da região existe no DOM, tem `aria-live="polite"` e não está oculto (sem `display: none`, `hidden` ou `aria-hidden`; checar com `getComputedStyle`);
+  - ao passar a ter erro, o texto aparece **no mesmo nó** que já estava renderizado (mesma referência de elemento), para ser anunciado;
+  - o `id` usado em `aria-describedby` é estável entre os estados.
+- [ ] T129 [US2] [IMPL-FRONT] Em `frontend/src/app/shared/forms/field-error.component.ts`: remover `:host:empty { display: none }` e manter a região sempre renderizada (vazia quando válido; o espaço visual é evitado com altura mínima zero, não escondendo a região) (depende de: T128). T128 verde e as specs de forms existentes continuam verdes.
+- [ ] T130 [P] [US2] [TEST-FRONT] Texto acessível do preço promocional (depende de: T039, T052):
+  - criar `frontend/src/app/features/public-menu/menu-item-card.component.spec.ts` e ampliar `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`;
+  - item em promoção: o texto acessível contém "Preço original" junto ao valor riscado e "Preço promocional" junto ao valor efetivo, num elemento `.sr-only` (classe global já existente em `frontend/src/styles.scss`);
+  - item sem promoção não exibe nenhum dos dois rótulos.
+- [ ] T131 [US2] [IMPL-FRONT] Adicionar `<span class="sr-only">Preço original</span>` e `<span class="sr-only">Preço promocional</span>` em `frontend/src/app/features/public-menu/menu-item-card.component.ts` e `frontend/src/app/features/admin/menu/menu-items-list.component.ts` (depende de: T130). T130 verde.
+- [ ] T132 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/features/public-menu/cart.store.spec.ts` com `localStorage` adulterado antes de restaurar (depende de: T050):
+  - quantidades `0` e `-3` viram 1;
+  - `150` vira 99;
+  - quantidade não inteira (`'abc'`, `null`, `1.5`) **descarta** a linha;
+  - JSON inválido no storage gera carrinho vazio, sem exceção;
+  - o total recalculado reflete as quantidades corrigidas.
+- [ ] T133 [US2] [IMPL-FRONT] `clamp(1..99)` e validação de inteiro na leitura do `localStorage` em `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T132). T132 verde.
+
 **Checkpoint US2**: T057 verde.
 
 ---
@@ -895,6 +921,12 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - T120→T121 (a11y do form de item) só depois de T040;
   - T122→T123 (FK composta) e T124→T125 (`Description`) dependem só da fatia back da US1, que já está pronta;
   - posição concorrente: risco aceito (research R19), sem task.
+- **Ajustes da revisão 5 (T126–T133)**: front puro, com os quatro pares independentes entre si;
+  - T126→T127 dependem de T016;
+  - T128→T129 de T119;
+  - T130→T131 de T039/T052;
+  - T132→T133 de T050;
+  - EXIF/GPS: backlog pós-MVP (research R20), sem task.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
 
@@ -915,6 +947,7 @@ depois vem a próxima fatia. O Dev nunca começa uma fatia cujo teste não estej
 | 6 | T089, T090 | T093 | T088, T091, **T102**, **T104**, **T116** | T092, **T103**, **T105**, **T117** |
 | já (prioridade) | **T106**, **T110**, **T112**, **T114** | **T107**, **T111**, **T113**, **T115** | **T108**, **T116** | **T109**, **T117** |
 | revisão US1 | **T122**, **T124** | **T123**, **T125** | **T118**, **T120** (após T040) | **T119**, **T121** |
+| revisão 5 | — | — | **T126**, **T128**, **T130**, **T132** | **T127**, **T129**, **T131**, **T133** |
 
 ## Parallel Examples
 
@@ -957,9 +990,9 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | Setup | 4 | 1 | 2 | 0 | 1 |
 | Foundational | 26 | 10 | 11 | 3 | 2 |
 | US1 | 34 | 10 | 7 | 11 | 6 |
-| US2 | 18 | 6 | 3 | 5 | 4 |
+| US2 | 26 | 6 | 3 | 9 | 8 |
 | US3 | 12 | 3 | 2 | 5 | 2 |
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
 | Polish | 11 | 2 | 1 | 4 | 4 |
-| **Total** | **125** | **37** | **31** | **35** | **22** |
+| **Total** | **133** | **37** | **31** | **39** | **26** |

@@ -278,3 +278,14 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
 - **Revisitar quando**: houver múltiplos editores por estabelecimento ou importação em lote. A
   solução seria `pg_advisory_xact_lock` por escopo na criação, ou uma constraint única
   `DEFERRABLE INITIALLY DEFERRED`.
+
+## R20. Metadados EXIF/GPS nas fotos (revisão 5): backlog pós-MVP
+
+- **Situação**: as fotos enviadas pelo Dono são gravadas como chegaram. JPEG e WebP podem conter
+  EXIF com GPS, modelo do aparelho e data, e esses dados ficam públicos em `/media`.
+- **Decision**: **risco aceito no MVP, item de backlog pós-MVP**. Quem envia é o próprio
+  estabelecimento (foto de produto, em geral tirada no próprio local, cujo endereço já é público),
+  e o fluxo não recebe imagens de consumidores.
+- **Pós-MVP**: reencodar a imagem no upload, removendo metadados e normalizando a orientação
+  (ex.: `SixLabors.ImageSharp` ou `SkiaSharp`). Isso também permite gerar miniaturas e limitar a
+  resolução. Entra junto com a troca de `IImageStorage` para S3/R2.
