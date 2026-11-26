@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 import type {
   AuthResponse,
   Category,
@@ -202,4 +202,21 @@ export async function updatePartStatus(
     { headers: bearer(session), data: { status } },
   );
   return json<KitchenOrder>(response, 'updatePartStatus');
+}
+
+/** localStorage key read by the app's AuthStore (src/app/core/auth/auth.store.ts). */
+export const AUTH_STORAGE_KEY = 'easymenu.session';
+
+/**
+ * Signs the page in without the login form: stores the session in localStorage before any
+ * navigation, exactly as AuthStore.setSession would. Call it before the first `page.goto`.
+ */
+export async function loginAs(page: Page, session: AuthResponse): Promise<void> {
+  const stored = { accessToken: session.accessToken, expiresAt: session.expiresAt, user: session.user };
+  await page.addInitScript(
+    ([key, value]) => {
+      window.localStorage.setItem(key, value);
+    },
+    [AUTH_STORAGE_KEY, JSON.stringify(stored)] as const,
+  );
 }
