@@ -572,7 +572,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
 
 ### Fatia 3a: Transições (back)
 
-- [ ] T059 [P] [US3] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderStatusTests.cs`:
+- [X] T059 [P] [US3] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderStatusTests.cs`:
   - transições permitidas: received→in_preparation, received→ready, in_preparation→ready;
   - repetir o status atual é no-op;
   - retrocesso dá `invalid_status_transition`;
