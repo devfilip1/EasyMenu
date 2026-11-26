@@ -198,8 +198,8 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
 ## R15. Headers de segurança do front (pós-revisão Coruja)
 
 - **Decision**: a imagem de produção do front é `nginx:alpine` servindo o `dist`, com template
-  `frontend/nginx/default.conf.template` (`envsubst` de `API_ORIGIN`). Headers:
-  - `Content-Security-Policy`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: ${API_ORIGIN}; connect-src 'self' ${API_ORIGIN} ${API_WS_ORIGIN}; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`;
+  `frontend/nginx/default.conf.template` (`envsubst` de `API_UPSTREAM`, ver R18). Headers:
+  - `Content-Security-Policy`: `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`;
   - `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
     `X-Frame-Options: DENY` e `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
   O build Angular usa `security.autoCsp` (hash dos scripts inline), para o `script-src` dispensar
@@ -237,3 +237,27 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
     (até 5 tentativas).
 - **Rationale**: a verificação prévia (`AnyAsync`) tem janela de corrida. O índice único é a
   garantia real, e a resposta precisa ser a mesma do caminho comum.
+
+## R18. URL da API em produção (decisão pós-revisão Coruja)
+
+- **Decision**: **mesma origem via proxy reverso no nginx do front**. O
+  `frontend/nginx/default.conf.template` faz `proxy_pass` de `/api/`, `/hubs/` e `/media/` para
+  `${API_UPSTREAM}` (variável obrigatória do container, ex.: `http://api:8080`).
+  - `/hubs/` repassa `Upgrade`/`Connection` para WebSocket e usa `proxy_read_timeout 1h`.
+  - Todos os `location` de proxy enviam `X-Forwarded-For` (`$proxy_add_x_forwarded_for`) e
+    `X-Forwarded-Proto`.
+  - `environment.ts` (produção) continua com `apiUrl: ''`, o que torna verdadeiro o comentário
+    "mesma origem".
+  - A CSP fica só com `'self'` em `connect-src` e `img-src` (sem `API_ORIGIN`/`API_WS_ORIGIN`, que
+    saem do Dockerfile).
+  - O CORS da API deixa de ser necessário em produção; continua só para o `ng serve` em dev.
+  - A API **MUST** confiar no nginx via `ForwardedHeaders:KnownProxies` ou `KnownNetworks` (R14,
+    T112/T113). Sem isso, todos os clientes dividiriam a partição de rate limit do IP do nginx.
+- **Rationale**:
+  - CSP mínima;
+  - sem CORS nem preflight;
+  - WebSocket e `/media` na mesma origem (o `photoUrl` relativo funciona sem prefixo);
+  - um único host público.
+- **Alternatives**: `apiUrl` configurável em runtime (um `config.json` carregado no bootstrap,
+  com CORS e CSP listando a origem da API): mais peças móveis e CSP mais larga, sem benefício no
+  MVP. `apiUrl` fixado no build obrigaria a gerar uma imagem por ambiente.

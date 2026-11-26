@@ -52,6 +52,12 @@ tarefa `[TEST-*]` anterior.
   ou `frontend/e2e/**`, nem para "só ajustar uma lista". Se a implementação exige mudar um teste,
   a mudança vira uma tarefa `[TEST-*]` anterior. *Lição registrada*: a T004 (`[IMPL-FRONT]`, já
   concluída) editou `frontend/src/app/app.spec.ts`. Fica como exceção histórica e não se repete.
+- **Dono do `.github/workflows/ci.yml`**:
+  - jobs e passos de **teste** (rodar suítes, E2E, subir serviços para teste) são do Testador do
+    lado correspondente (Back ou Front);
+  - passos de **build, imagem e deploy** são do Dev do lado correspondente;
+  - mudança **estrutural** (novos gatilhos, permissões, cache, matriz, reorganizar jobs) é do
+    Arquiteto.
 - Tarefas T094+ foram acrescentadas após a revisão da Coruja. Os IDs não seguem a ordem física;
   vale a posição no arquivo e o "depende de".
 
@@ -228,6 +234,26 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - `backend/src/EasyMenu.Application/Common/{UniqueConstraintViolationException.cs,UniqueConstraints.cs}`;
   - override de `SaveChangesAsync` em `AppDbContext`: `DbUpdateException` com `PostgresException.SqlState == "23505"` vira `UniqueConstraintViolationException(ConstraintName)`;
   - `ProblemDetailsExceptionHandler`: constraint de e-mail vira 409 `email_taken` e de slug vira 409 `slug_taken`; desconhecida continua 500 com log.
+- [ ] T114 [TEST-BACK] Ampliar `backend/tests/EasyMenu.IntegrationTests/RateLimiting/AuthRateLimitTests.cs` (depende de: T094), com `WithRateLimits(2)`:
+  - 2 chamadas a `POST /api/auth/login` seguidas de `POST /api/auth/LOGIN` dão 429 (mesmo balde);
+  - idem com `/api/auth/Login/` (barra final);
+  - `/api/auth/REGISTER-OWNER` cai no balde do register, não no do login (as partições por endpoint continuam separadas).
+- [ ] T115 [IMPL-BACK] Chave da política `auth` em `backend/src/EasyMenu.Api/RateLimiting/RateLimitingSetup.cs` passa a usar o endpoint roteado (`(context.GetEndpoint() as RouteEndpoint)?.RoutePattern.RawText`), com fallback para `Request.Path` em minúsculas e sem barra final (depende de: T095, T114). T114 verde.
+
+### ForwardedHeaders (obrigatório antes de qualquer deploy; R14/R18)
+
+> Sem isto, atrás do proxy (nginx do front, R18) todos os clientes dividem a partição de rate limit
+> do IP do proxy. Nenhum deploy sai sem T113 verde.
+
+- [ ] T112 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/ForwardedHeadersTests.cs` (depende de: T094). Usa um `IStartupFilter` de teste que fixa `Connection.RemoteIpAddress = 127.0.0.1` e `WithRateLimits(2)`:
+  - **com** `ForwardedHeaders:KnownProxies:0=127.0.0.1`: 3 logins com `X-Forwarded-For: 203.0.113.1` fazem o 3º dar 429, enquanto `203.0.113.2` ainda não é limitado (partição pelo IP real do cliente);
+  - **sem** proxy configurado (padrão): `X-Forwarded-For` é ignorado; 3 logins com XFF diferentes fazem o 3º dar 429 (spoofing não fura o limite);
+  - **proxy não confiável**: com `KnownProxies:0=10.0.0.1` (diferente do `RemoteIpAddress` 127.0.0.1), o XFF também é ignorado;
+  - **rede confiável**: com `KnownNetworks:0=127.0.0.0/8`, o XFF é respeitado como no primeiro caso.
+- [ ] T113 [IMPL-BACK] `UseForwardedHeaders` em `Program.cs`, antes de `UseRateLimiter` (depende de: T095, T112). T112 verde.
+  - `XForwardedFor | XForwardedProto` e `ForwardLimit = 1`;
+  - `KnownProxies`/`KnownNetworks` lidos de `ForwardedHeaders:KnownProxies` e `ForwardedHeaders:KnownNetworks` (CIDR), e lista vazia significa não confiar em ninguém;
+  - documentar as chaves em `appsettings.json`, com lista vazia.
 
 **Checkpoint**: cadastro, login e me funcionam via API; front com sessão, guards e pipes.
 `dotnet test`, `npm test` e `npm run build` verdes.
@@ -773,13 +799,21 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - `frontend/Dockerfile` (multi-stage: `node:24` build → `nginx:alpine`), `frontend/.dockerignore` e `frontend/nginx/default.conf.template`;
   - no template: fallback SPA para `index.html`, os headers de research R15 com `envsubst` de `API_ORIGIN`/`API_WS_ORIGIN`, e `index.html` sem cache;
   - `security.autoCsp: true` no build de produção em `frontend/angular.json` (ajustar `inlineCritical` se gerar violação).
-- [ ] T112 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/ForwardedHeadersTests.cs` (depende de: T094). Usa um `IStartupFilter` de teste que fixa `Connection.RemoteIpAddress = 127.0.0.1` e `WithRateLimits(2)`:
-  - **com** `ForwardedHeaders:KnownProxies:0=127.0.0.1`: 3 logins com `X-Forwarded-For: 203.0.113.1` fazem o 3º dar 429, enquanto `203.0.113.2` ainda não é limitado (partição pelo IP real do cliente);
-  - **sem** proxy configurado (padrão): `X-Forwarded-For` é ignorado; 3 logins com XFF diferentes fazem o 3º dar 429 (spoofing não fura o limite).
-- [ ] T113 [IMPL-BACK] `UseForwardedHeaders` em `Program.cs`, antes de `UseRateLimiter` (depende de: T095, T112). T112 verde.
-  - `XForwardedFor | XForwardedProto` e `ForwardLimit = 1`;
-  - `KnownProxies`/`KnownNetworks` lidos de `ForwardedHeaders:KnownProxies` e `ForwardedHeaders:KnownNetworks` (CIDR), e lista vazia significa não confiar em ninguém;
-  - documentar as chaves em `appsettings.json`, com lista vazia.
+- [ ] T116 [TEST-FRONT] Mesma origem via nginx (R18; obrigatório antes do deploy) (depende de: T104).
+  - Ampliar `frontend/e2e/security-headers.spec.ts` (projeto `prod-headers`, via `E2E_PROD_URL`):
+    - a CSP tem `connect-src 'self'` e `img-src 'self' data:`, **sem** origem externa;
+    - `GET {E2E_PROD_URL}/api/public/establishments/{slug}/menu` dá 200 JSON via proxy (cardápio semeado pela API direta);
+    - `/m/{slug}` renderiza o cardápio, com a foto de um item carregada de `/media/…` (`naturalWidth > 0`);
+    - `/pedido/{token}` atualiza o status em ≤ 5 s após avançar a parte pela API, o que prova o WebSocket de `/hubs` pelo proxy;
+    - zero violações de CSP.
+  - No job `frontend-prod-headers` de `.github/workflows/ci.yml`: `docker run` com `--add-host=host.docker.internal:host-gateway -e API_UPSTREAM=http://host.docker.internal:5080`, sem `API_ORIGIN` e sem `Cors__AllowedOrigins__0=http://localhost:8080`.
+- [ ] T117 [IMPL-FRONT] Proxy reverso no front (depende de: T105, T116). T116 verde.
+  - Em `frontend/nginx/default.conf.template`:
+    - `location /api/`, `/hubs/` (`proxy_http_version 1.1`, `Upgrade`/`Connection`, `proxy_read_timeout 1h`) e `/media/` com `proxy_pass ${API_UPSTREAM}`;
+    - `X-Forwarded-For`/`X-Forwarded-Proto`;
+    - CSP sem `API_ORIGIN`/`API_WS_ORIGIN`.
+  - No `frontend/Dockerfile`: troca as variáveis por `API_UPSTREAM` (sem default; o entrypoint falha com mensagem clara se ausente).
+  - `frontend/src/environments/environment.ts` continua `apiUrl: ''`.
 
 ---
 
@@ -812,7 +846,10 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - T104→T105 a qualquer momento após T017.
 - **Decisões pós-Foundational (T106–T113)**:
   - T106→T107, T108→T109 e T110→T111 entram já (Foundational) e têm prioridade, porque o contrato novo deixa vermelhos o contrato e o build do front até T107 e T109;
-  - T112→T113 (Polish) dependem só de T094/T095.
+  - T112→T113 (ForwardedHeaders) foram para a **Foundational**, são obrigatórias antes de qualquer deploy e dependem só de T094/T095.
+- **Ajustes da revisão da Foundational (T114–T117)**:
+  - T114→T115 (chave do rate limit) dependem de T094/T095;
+  - T116→T117 (mesma origem via nginx) dependem de T104/T105 e são obrigatórias antes do deploy, junto com T113.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
 
@@ -830,8 +867,8 @@ depois vem a próxima fatia. O Dev nunca começa uma fatia cujo teste não estej
 | 3 | T027, T028, **T096**, T043, T045–T048, **T098** | T029, **T097**, T044, T049, **T099** | T041, T042, T050, T052, T054, T056 | T051, T053, T055, T058 |
 | 4 | T059, T060, T062, **T083** | T061, T063, **T084** | T057, T064, T066, T068–T070 | T065, T067 |
 | 5 | T071, **T100**, T081 | T072, **T101**, T082 | T073, T075, T077, T078, T085, T086 | T074, T076, T087 |
-| 6 | T089, T090, **T112** | T093, **T113** | T088, T091, **T102**, **T104** | T092, **T103**, **T105** |
-| já (prioridade) | **T106**, **T110** | **T107**, **T111** | **T108** | **T109** |
+| 6 | T089, T090 | T093 | T088, T091, **T102**, **T104**, **T116** | T092, **T103**, **T105**, **T117** |
+| já (prioridade) | **T106**, **T110**, **T112**, **T114** | **T107**, **T111**, **T113**, **T115** | **T108**, **T116** | **T109**, **T117** |
 
 ## Parallel Examples
 
@@ -872,11 +909,11 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | Fase | Tarefas | TEST-BACK | IMPL-BACK | TEST-FRONT | IMPL-FRONT |
 |---|---|---|---|---|---|
 | Setup | 4 | 1 | 2 | 0 | 1 |
-| Foundational | 22 | 8 | 9 | 3 | 2 |
+| Foundational | 26 | 10 | 11 | 3 | 2 |
 | US1 | 26 | 8 | 5 | 9 | 4 |
 | US2 | 18 | 6 | 3 | 5 | 4 |
 | US3 | 12 | 3 | 2 | 5 | 2 |
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
-| Polish | 11 | 3 | 2 | 3 | 3 |
-| **Total** | **113** | **34** | **28** | **32** | **19** |
+| Polish | 11 | 2 | 1 | 4 | 4 |
+| **Total** | **117** | **35** | **29** | **33** | **20** |

@@ -232,7 +232,11 @@ Rotas finais do front:
     - 401/403 sempre com `ProblemDetails` `unauthorized`/`forbidden`;
     - violação de índice único (23505) vira 409 `email_taken`/`slug_taken`, ou retry nos índices
       de pedido;
-    - `ForwardedHeaders` com proxies confiáveis configuráveis (R14).
+    - `ForwardedHeaders` com proxies confiáveis configuráveis (R14), **obrigatório antes de
+      qualquer deploy**;
+    - chave de rate limit de auth normalizada pelo endpoint (`/api/auth/LOGIN` cai no mesmo balde);
+    - produção com o front e a API na **mesma origem**: o nginx do front faz proxy de `/api`,
+      `/hubs` e `/media` (R18).
 
 ## Ordem de execução e paralelismo
 
