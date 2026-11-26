@@ -666,7 +666,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
   - emite `resync$` no start e em `onreconnected`;
   - `disconnect()` faz stop;
   - quando a conexão fecha com erro, expõe o estado `disconnected`.
-- [ ] T065 [US3] [IMPL-FRONT] `frontend/src/app/core/realtime/{hub-connection.factory.ts,kitchen-realtime.service.ts}` (`withAutomaticReconnect`) (depende de: T064). T064 verde.
+- [X] T065 [US3] [IMPL-FRONT] `frontend/src/app/core/realtime/{hub-connection.factory.ts,kitchen-realtime.service.ts}` (`withAutomaticReconnect`) (depende de: T064). T064 verde.
 - [X] T066 [P] [US3] [TEST-FRONT] `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
   - no `resync$` chama `listKitchenOrders`;
   - a seção "Bar" mostra só as partes `bar` e a seção "Cozinha" só as `kitchen`, do mais antigo ao mais novo;
