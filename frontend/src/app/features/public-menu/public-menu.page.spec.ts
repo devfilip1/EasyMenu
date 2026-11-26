@@ -1,7 +1,7 @@
 import { HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { environment } from '../../../environments/environment';
-import { button, normalize, rowWith, rows, textOf } from '../../../testing/dom';
+import { button, link, normalize, rowWith, rows, textOf } from '../../../testing/dom';
 import { apiUrl, expectRequest, flushProblem, provideApiTesting, settle } from '../../../testing/http';
 import {
   BATATA,
@@ -14,6 +14,7 @@ import {
 import { getPublicMenu } from '../../api/generated/fn/public-menu/get-public-menu';
 import { PublicMenu } from '../../api/generated/models/public-menu';
 import { PLACEHOLDER_ITEM_IMAGE } from '../../shared/media-url.pipe';
+import { OrderHistoryEntry, OrderHistoryStore } from '../../core/storage/order-history.store';
 import { CartStore } from './cart.store';
 import { PublicMenuPage } from './public-menu.page';
 
@@ -160,5 +161,37 @@ describe('PublicMenuPage', () => {
     expect(textOf(el)).toContain('<img src="x" onerror="window.__pwned = true">Descrição');
     expect(textOf(el.querySelector('h1'))).toBe('<b>Bar</b>');
     expect((window as unknown as { __pwned?: boolean }).__pwned).toBeUndefined();
+  });
+
+  describe('"Acompanhar meu pedido"', () => {
+    const entry = (token: string, slug: string, minute: number): OrderHistoryEntry => ({
+      publicToken: token.padEnd(43, 'x'),
+      slug,
+      pickupCode: 'K7QX',
+      createdAt: new Date(Date.UTC(2026, 10, 26, 12, minute)).toISOString(),
+    });
+
+    it('links to the most recent order of this establishment', async () => {
+      const history = TestBed.inject(OrderHistoryStore);
+      history.remember(entry('older-here', SLUG, 1));
+      history.remember(entry('latest-here', SLUG, 2));
+      history.remember(entry('other-bar', 'outro-bar', 3));
+
+      await render();
+
+      const track = link(el, /acompanhar meu pedido/i);
+      expect(track.getAttribute('href')).toBe(`/pedido/${'latest-here'.padEnd(43, 'x')}`);
+    });
+
+    it('is not shown without an order for this establishment', async () => {
+      TestBed.inject(OrderHistoryStore).remember(entry('other-bar', 'outro-bar', 3));
+
+      await render();
+
+      const links = Array.from(el.querySelectorAll('a')).filter((a) =>
+        /acompanhar meu pedido/i.test(textOf(a)),
+      );
+      expect(links).toEqual([]);
+    });
   });
 });
