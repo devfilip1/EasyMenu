@@ -344,36 +344,36 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1e: Auth e admin (front)
 
-- [ ] T030 [P] [US1] [TEST-FRONT] `frontend/src/app/features/auth/login.page.spec.ts`:
+- [X] T030 [P] [US1] [TEST-FRONT] `frontend/src/app/features/auth/login.page.spec.ts`:
   - envia pela função gerada `login`;
   - chama `AuthStore.setSession`;
   - redireciona owner para `/admin/cardapio` e kitchen para `/cozinha`;
   - 401 mostra "E-mail ou senha inválidos", sem indicar o campo;
   - campos obrigatórios;
   - botão desabilitado durante o envio.
-- [ ] T031 [P] [US1] [TEST-FRONT] `frontend/src/app/features/auth/register.page.spec.ts`:
+- [X] T031 [P] [US1] [TEST-FRONT] `frontend/src/app/features/auth/register.page.spec.ts`:
   - validação de e-mail, senha ≥ 8, nome do estabelecimento 2–100 e slug com o pattern do contrato;
   - sugere o slug a partir do nome (minúsculas, sem acento, hífens) enquanto o usuário não editar o slug;
   - 409 `slug_taken` mostra "Este endereço já está em uso" no campo slug;
   - 409 `email_taken` mostra a mensagem no campo e-mail;
   - sucesso faz `setSession` e navega para `/admin/cardapio`.
 - [ ] T032 [US1] [IMPL-FRONT] `frontend/src/app/features/auth/{login.page.ts,register.page.ts}` (+ html/scss) (depende de: T030, T031). T030 e T031 verdes.
-- [ ] T033 [P] [US1] [TEST-FRONT] Shell do admin e configurações:
+- [X] T033 [P] [US1] [TEST-FRONT] Shell do admin e configurações:
   - `frontend/src/app/features/admin/admin-shell.component.spec.ts`: navegação Cardápio/Equipe/Pedidos/Estabelecimento, botão Sair (`logout` → `/login`) e link "Painel da cozinha";
   - `frontend/src/app/features/admin/settings/settings.page.spec.ts`: mostra o slug só leitura e o link público `/m/{slug}`, renomeia via `updateEstablishment` e mostra os erros de validação.
 - [ ] T034 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/admin-shell.component.ts` (rota pai `/admin` com `<router-outlet>`) e `frontend/src/app/features/admin/settings/settings.page.ts` (depende de: T033). T033 verde.
 
 ### Fatia 1f: Cardápio admin (front)
 
-- [ ] T035 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/categories-panel.component.spec.ts`:
+- [X] T035 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/categories-panel.component.spec.ts`:
   - lista na ordem de `position`;
   - cria, com o campo vazio desabilitando o envio;
   - renomeia inline;
   - "subir/descer" chama `reorderCategories` com a lista **completa** de ids na nova ordem;
   - remove com confirmação, e 409 `category_not_empty` mostra "Remova ou mova os itens antes de excluir a categoria".
 - [ ] T036 [US1] [IMPL-FRONT] `frontend/src/app/features/admin/menu/{menu.page.ts,categories-panel.component.ts}` (depende de: T035). T035 verde.
-- [ ] T037 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/price-input.spec.ts`: `parseBrlToCents('19,90')` = 1990, `'25'` = 2500, `'1.234,5'` = 123450; inválido dá `null`; `formatCentsInput(1990)` = `'19,90'`.
-- [ ] T038 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts`:
+- [X] T037 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/price-input.spec.ts`: `parseBrlToCents('19,90')` = 1990, `'25'` = 2500, `'1.234,5'` = 123450; inválido dá `null`; `formatCentsInput(1990)` = `'19,90'`.
+- [X] T038 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts`:
   - campos obrigatórios (nome, preço, setor, categoria);
   - promoção ≥ preço ou ≤ 0 mostra "O preço promocional deve ser maior que zero e menor que o preço" e bloqueia o envio;
   - envia `priceCents`/`promotionalPriceCents` inteiros;
@@ -381,7 +381,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - com arquivo selecionado, chama `uploadMenuItemPhoto` depois de salvar;
   - 400 `invalid_image_type` ou 413 `image_too_large` mostra a mensagem e mantém o item salvo;
   - "remover foto" chama `deleteMenuItemPhoto`.
-- [ ] T039 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`:
+- [X] T039 [P] [US1] [TEST-FRONT] `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`:
   - itens da categoria na ordem;
   - badge "Esgotado";
   - toggle chama `setMenuItemAvailability`;
@@ -392,8 +392,8 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1g: E2E
 
-- [ ] T041 [US1] [TEST-FRONT] Fixture de imagem `frontend/e2e/fixtures/item.jpg` (JPEG pequeno) e `frontend/e2e/fixtures/not-image.txt` (depende de: T017).
-- [ ] T042 [US1] [TEST-FRONT] `frontend/e2e/us1-owner-menu.spec.ts` (depende de: T041). Fluxo:
+- [X] T041 [US1] [TEST-FRONT] Fixture de imagem `frontend/e2e/fixtures/item.jpg` (JPEG pequeno) e `frontend/e2e/fixtures/not-image.txt` (depende de: T017).
+- [X] T042 [US1] [TEST-FRONT] `frontend/e2e/us1-owner-menu.spec.ts` (depende de: T041). Fluxo:
   - cadastro pela UI;
   - criar "Drinks" e "Porções" e mover Porções para cima;
   - criar Caipirinha 25,00/19,90 Bar com foto;
