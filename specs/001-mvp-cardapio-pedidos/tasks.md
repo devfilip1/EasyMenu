@@ -506,7 +506,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
 
 ### Fatia 2c: Cardápio público e carrinho (front)
 
-- [ ] T050 [P] [US2] [TEST-FRONT] `frontend/src/app/features/public-menu/cart.store.spec.ts`:
+- [X] T050 [P] [US2] [TEST-FRONT] `frontend/src/app/features/public-menu/cart.store.spec.ts`:
   - `add` com quantidade 1 e incremento;
   - `increment`/`decrement` limitados a 1..99, e `decrement` em 1 mantém 1;
   - `remove`;
@@ -516,7 +516,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `clear()`;
   - `syncWithMenu(menu)` atualiza preço e nome e marca as linhas indisponíveis.
 - [ ] T051 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart.store.ts` (depende de: T050). T050 verde.
-- [ ] T052 [P] [US2] [TEST-FRONT] `frontend/src/app/features/public-menu/public-menu.page.spec.ts`:
+- [X] T052 [P] [US2] [TEST-FRONT] `frontend/src/app/features/public-menu/public-menu.page.spec.ts`:
   - carrega `getPublicMenu(slug)` pelo input de rota;
   - mostra o nome do estabelecimento e as categorias e itens na ordem;
   - promoção mostra o preço efetivo em destaque e o original em `<s>`;
@@ -529,7 +529,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
 
 ### Fatia 2d: Checkout e página do pedido (front)
 
-- [ ] T054 [P] [US2] [TEST-FRONT] Carrinho e histórico:
+- [X] T054 [P] [US2] [TEST-FRONT] Carrinho e histórico:
   - `frontend/src/app/features/public-menu/cart-sheet.component.spec.ts`:
     - linhas com subtotal e o total;
     - controles de quantidade;
@@ -542,12 +542,12 @@ código e conferir o total calculado pelo servidor (E2E T057).
     - `remember({publicToken, slug, pickupCode, createdAt})` mantém os 10 mais recentes;
     - `lastForSlug(slug)`.
 - [ ] T055 [US2] [IMPL-FRONT] `frontend/src/app/features/public-menu/cart-sheet.component.ts` e `frontend/src/app/core/storage/order-history.store.ts` (depende de: T053, T054). T054 verde.
-- [ ] T056 [P] [US2] [TEST-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts`, parte estática:
+- [X] T056 [P] [US2] [TEST-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts`, parte estática:
   - carrega `getPublicOrder(publicToken)`;
   - mostra o código de retirada em destaque, os itens com quantidade, preço unitário e subtotal, e o total;
   - status `paid` mostra "Pago / aguardando preparo";
   - 404 mostra "Pedido não encontrado".
-- [ ] T057 [US2] [TEST-FRONT] `frontend/e2e/us2-checkout.spec.ts` (depende de: T017). Fluxo:
+- [X] T057 [US2] [TEST-FRONT] `frontend/e2e/us2-checkout.spec.ts` (depende de: T017). Fluxo:
   - semear o cardápio via `support/api.ts`;
   - abrir `/m/{slug}` anônimo;
   - Chopp não pode ser adicionado;
