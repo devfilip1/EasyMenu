@@ -451,7 +451,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - erro geral de login (401) em `role="alert"`;
   - enviar com campos inválidos deixa `document.activeElement` no primeiro controle inválido.
 - [X] T119 [US1] [IMPL-FRONT] Criar `frontend/src/app/shared/forms/{form-a11y.ts,field-error.component.ts}` e aplicar o padrão em `features/auth/{login,register}.page.ts`, `features/admin/settings/settings.page.ts` e `features/admin/menu/categories-panel.component.ts` (depende de: T032, T034, T036, T118). T118 verde.
-- [ ] T120 [US1] [TEST-FRONT] Acessibilidade do form de item: ampliar `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts` com o mesmo padrão (depende de: T040, para não mexer no spec enquanto T040 está em implementação). Cobrir:
+- [X] T120 [US1] [TEST-FRONT] Acessibilidade do form de item: ampliar `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts` com o mesmo padrão (depende de: T040, para não mexer no spec enquanto T040 está em implementação). Cobrir:
   - nome, preço, setor e categoria obrigatórios;
   - erro de promoção ligado ao campo de promoção;
   - erros de foto (`invalid_image_type`/`image_too_large`) ligados ao input de arquivo, em live region;
@@ -728,7 +728,7 @@ recarregar, junto com o aviso de retirada.
   - o cardápio público mostra o link "Acompanhar meu pedido" para o último pedido daquele slug.
 - [ ] T076 [US4] [IMPL-FRONT] Tempo real em `frontend/src/app/features/order-tracking/order-tracking.page.ts` e link de histórico em `public-menu.page.ts` (depende de: T058, T074, T075). T075 verde.
 - [X] T077 [US4] [TEST-FRONT] Helper E2E `frontend/e2e/support/kitchen.ts` (`advancePart(token, orderId, station, status)` e `pickUp(token, orderId)`), que avança partes e marca a retirada via API com o token do Dono (depende de: T069).
-- [ ] T078 [US4] [TEST-FRONT] `frontend/e2e/us4-tracking.spec.ts` (depende de: T077). Fluxo:
+- [X] T078 [US4] [TEST-FRONT] `frontend/e2e/us4-tracking.spec.ts` (depende de: T077). Fluxo:
   - comprar;
   - a página mostra "Pago / aguardando preparo";
   - avançar a parte via API leva a "Em preparo" em ≤ 5 s sem reload;
