@@ -14,6 +14,7 @@ import { deleteMenuItem } from '../../../api/generated/fn/menu-items/delete-menu
 import { listMenuItems } from '../../../api/generated/fn/menu-items/list-menu-items';
 import { setMenuItemAvailability } from '../../../api/generated/fn/menu-items/set-menu-item-availability';
 import { MenuItem } from '../../../api/generated/models/menu-item';
+import { expectNoPromotionLabels, expectPromotionLabels } from '../../../../testing/price-a11y';
 import { MenuItemsListComponent } from './menu-items-list.component';
 
 const ROW = 'menu-item-row';
@@ -162,6 +163,17 @@ describe('MenuItemsListComponent', () => {
       await settle(fixture);
 
       expect(order()).toEqual(['Chopp', 'Caipirinha', 'Gin tônica']);
+    });
+  });
+
+  describe('accessible promotion text (T130)', () => {
+    it('labels the original and the promotional price for screen readers', () => {
+      expectPromotionLabels(rowWith(el, ROW, 'Caipirinha'), 'R$ 25,00', 'R$ 19,90');
+    });
+
+    it('shows neither label without a promotion', () => {
+      expectNoPromotionLabels(rowWith(el, ROW, 'Chopp'));
+      expectNoPromotionLabels(rowWith(el, ROW, 'Gin tônica'));
     });
   });
 });
