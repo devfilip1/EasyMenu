@@ -228,6 +228,11 @@ Rotas finais do front:
     - `/media` só com tipos de imagem, `nosniff` e sem listagem;
     - upload grande demais dá 413 `image_too_large`;
     - CSP e headers de segurança na imagem nginx do front.
+12. **Decisões pós-Foundational** (research R16 e R17):
+    - 401/403 sempre com `ProblemDetails` `unauthorized`/`forbidden`;
+    - violação de índice único (23505) vira 409 `email_taken`/`slug_taken`, ou retry nos índices
+      de pedido;
+    - `ForwardedHeaders` com proxies confiáveis configuráveis (R14).
 
 ## Ordem de execução e paralelismo
 

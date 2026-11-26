@@ -188,11 +188,11 @@ filtrado.
 
 | Tabela | Índice |
 |---|---|
-| establishments | unique(slug) |
-| users | unique(normalized_email); (establishment_id) |
+| establishments | unique(slug) → `ix_establishments_slug` (23505 → 409 `slug_taken`) |
+| users | unique(normalized_email) → `ix_users_normalized_email` (23505 → 409 `email_taken`); (establishment_id) |
 | categories | (establishment_id, position) |
 | menu_items | (establishment_id, category_id, position) |
-| orders | unique(public_token); unique parcial (establishment_id, pickup_code) where status <> 'picked_up'; (establishment_id, status, created_at desc) |
+| orders | unique(public_token) → `ix_orders_public_token`; unique parcial (establishment_id, pickup_code) where status <> 'picked_up' → `ix_orders_establishment_id_pickup_code` (23505 → retry no checkout); (establishment_id, status, created_at desc) |
 | order_parts | unique(order_id, station) |
 
 ## Abstrações da Application (interfaces)

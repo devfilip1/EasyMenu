@@ -14,6 +14,13 @@ info:
     - Endpoints autenticados usam `Authorization: Bearer <jwt>`. Sem token ou com token inválido,
       desativado ou expirado, a resposta é **401**. Papel sem permissão dá **403**. Recurso de
       outro estabelecimento dá **404**.
+    - 401 e 403 **sempre** têm corpo `application/problem+json`, com `code=unauthorized` ou
+      `code=forbidden`; o 401 mantém o header `WWW-Authenticate: Bearer`. A exceção é o login
+      com credenciais erradas, que responde 401 `invalid_credentials`. O negotiate dos hubs
+      SignalR segue a mesma regra.
+    - Conflitos de unicidade (e-mail, slug) dão **409** com o mesmo `code` (`email_taken` /
+      `slug_taken`), inclusive quando duas requisições concorrentes chegam juntas ao banco.
+      Nunca dão 500.
     - Fotos: `photoUrl` é relativo à raiz da API (ex.: `/media/{establishmentId}/{file}.jpg`).
     - Eventos em tempo real (SignalR) estão em `contracts/realtime.md`.
     - **Rate limiting**: `POST /api/auth/login`, `POST /api/auth/register-owner` e
@@ -755,12 +762,12 @@ components:
         application/problem+json:
           schema: { $ref: "#/components/schemas/ProblemDetails" }
     Unauthorized:
-      description: Token ausente, inválido, expirado ou de conta desativada.
+      description: "`unauthorized`: token ausente, inválido, expirado ou de conta desativada (header `WWW-Authenticate: Bearer`)."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/ProblemDetails" }
     Forbidden:
-      description: Papel sem permissão para a operação.
+      description: "`forbidden`: papel sem permissão para a operação."
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/ProblemDetails" }
@@ -828,6 +835,8 @@ components:
         - order_not_found
         - invalid_status_transition
         - order_not_ready
+        - unauthorized
+        - forbidden
         - rate_limited
         - payload_too_large
 

@@ -205,3 +205,35 @@ Decisões técnicas da Fase 0. Não restou nenhum `NEEDS CLARIFICATION` no Techn
   O build Angular usa `security.autoCsp` (hash dos scripts inline), para o `script-src` dispensar
   `'unsafe-inline'`. HSTS fica na borda/TLS, fora do container.
 - **Rationale**: defesa em profundidade contra XSS e clickjacking no cardápio público e no admin.
+
+## R16. Corpo de 401/403 (decisão pós-Foundational, apontada pelo Forja)
+
+- **Decision**: 401 e 403 sempre respondem `application/problem+json` (`ApiProblem`), com os novos
+  códigos `unauthorized` e `forbidden` no `ErrorCode`.
+  - 401 via `JwtBearerEvents.OnChallenge`: `HandleResponse()`, escreve o problema e mantém
+    `WWW-Authenticate: Bearer` (com `error="invalid_token"` quando houver falha de token).
+  - 403 via `JwtBearerEvents.OnForbidden`.
+  - O login com credenciais erradas continua 401 `invalid_credentials`.
+- **Rationale**: o contrato já declara `ProblemDetails` com `code` obrigatório em todo 401/403. O
+  front trata todo erro pelo `code`, e um corpo vazio quebraria a regra e o comparador de schema.
+- **Alternatives**: tirar o corpo dos 401/403 do contrato (o front perderia a uniformidade);
+  reaproveitar `not_found` (semanticamente errado).
+
+## R17. Violação de unicidade concorrente (decisão pós-Foundational, apontada pelo Forja)
+
+- **Decision**: `AppDbContext.SaveChangesAsync` captura `DbUpdateException` cuja causa é
+  `PostgresException` com `SqlState = 23505` e relança
+  `UniqueConstraintViolationException(constraintName)`, definida em
+  `EasyMenu.Application/Common`, para a Application não depender do Npgsql.
+  - Mapeamento para 409, por constante de nome de índice em
+    `EasyMenu.Application/Common/UniqueConstraints.cs`:
+    - `ix_users_normalized_email` → `ConflictException(email_taken)`;
+    - `ix_establishments_slug` → `ConflictException(slug_taken)`.
+  - Onde mapear: nos serviços que gravam (`AuthService`, `StaffService`) ou de forma central
+    no `ProblemDetailsExceptionHandler`. Escolha central: o handler mapeia as constraints
+    conhecidas; constraint desconhecida continua 500, porque indica bug.
+  - Índices de pedido (`ix_orders_public_token`, `ix_orders_establishment_id_pickup_code`) **não**
+    viram 409: o `CheckoutService` captura a exceção com esses nomes e gera novo código/token
+    (até 5 tentativas).
+- **Rationale**: a verificação prévia (`AnyAsync`) tem janela de corrida. O índice único é a
+  garantia real, e a resposta precisa ser a mesma do caminho comum.

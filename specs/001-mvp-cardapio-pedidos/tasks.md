@@ -201,6 +201,34 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - `[EnableRateLimiting("auth")]` + `[ProducesResponseType<ApiProblem>(429, "application/problem+json")]` em login e register-owner;
   - padrões em `appsettings.json`.
 
+### Decisões pós-Foundational (apontadas pelo Forja; research R16/R17)
+
+> ⚠️ O commit de contrato que adiciona `unauthorized` e `forbidden` ao `ErrorCode` deixa vermelhos o
+> `OpenApiContractTests` (back) e o `tsc` do front (`Record<ErrorCode, string>` em `problem.ts`)
+> até T107 e T109. São tarefas curtas e têm prioridade.
+
+- [ ] T106 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Auth/AuthErrorBodyTests.cs` (depende de: T008):
+  - `GET /api/auth/me` sem token dá 401 `application/problem+json` com `status=401`, `code=unauthorized` e header `WWW-Authenticate` começando com `Bearer`;
+  - o mesmo vale para token adulterado, expirado (`Factory.Clock`) e de usuário desativado;
+  - token de **kitchen** num endpoint `OwnerOnly` dá 403 `code=forbidden` (usar um controller de teste em `WithTestControllers`, ao lado de `ErrorTestController`, com `[Authorize(Policy = "OwnerOnly")]`);
+  - `POST /api/auth/login` com senha errada continua 401 `invalid_credentials` (não `unauthorized`);
+- [ ] T107 [IMPL-BACK] Corpo de 401/403 (depende de: T013, T014, T106). T106 e `OpenApiContractTests` verdes.
+  - `backend/src/EasyMenu.Api/Auth/AuthProblemEvents.cs`: `OnChallenge` (`HandleResponse`, `ApiProblem` 401 `unauthorized`, mantém `WWW-Authenticate`) e `OnForbidden` (`ApiProblem` 403 `forbidden`), registrados em `AddJwtBearer`;
+  - `unauthorized`/`forbidden` em `EasyMenu.Application/Common/ErrorCodes.cs` e no enum de `code` exposto no OpenAPI gerado.
+- [ ] T108 [P] [TEST-FRONT] (depende de: T016):
+  - ampliar `frontend/src/app/core/errors/problem.spec.ts`:
+    - `unauthorized` → "Sua sessão expirou. Entre novamente.";
+    - `forbidden` → "Você não tem permissão para esta ação.";
+  - ampliar `frontend/src/app/core/auth/auth.interceptor.spec.ts`: 403 `forbidden` **não** faz logout (só o 401 faz).
+- [ ] T109 [IMPL-FRONT] Mensagens em `frontend/src/app/core/errors/problem.ts` e ajuste no interceptor, se preciso (depende de: T018, T108). T108 verde, com `npm run build` verde.
+- [ ] T110 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/UniqueViolationTests.cs` (depende de: T007):
+  - **determinístico**: inserir direto via `AppDbContext` dois `User` com o mesmo `NormalizedEmail` lança `UniqueConstraintViolationException` com `ConstraintName == "ix_users_normalized_email"`; idem para dois `Establishment` com o mesmo slug (`ix_establishments_slug`);
+  - **concorrência**: 10 rodadas de 2 `POST /api/auth/register-owner` simultâneos (`Task.WhenAll`) com o mesmo e-mail e slugs diferentes dão exatamente um 201 e um 409 `email_taken` por rodada, nunca 500; idem com o mesmo slug e e-mails diferentes, que dão 409 `slug_taken`.
+- [ ] T111 [IMPL-BACK] Tradução de 23505 (depende de: T012, T014, T110). T110 verde.
+  - `backend/src/EasyMenu.Application/Common/{UniqueConstraintViolationException.cs,UniqueConstraints.cs}`;
+  - override de `SaveChangesAsync` em `AppDbContext`: `DbUpdateException` com `PostgresException.SqlState == "23505"` vira `UniqueConstraintViolationException(ConstraintName)`;
+  - `ProblemDetailsExceptionHandler`: constraint de e-mail vira 409 `email_taken` e de slug vira 409 `slug_taken`; desconhecida continua 500 com log.
+
 **Checkpoint**: cadastro, login e me funcionam via API; front com sessão, guards e pipes.
 `dotnet test`, `npm test` e `npm run build` verdes.
 
@@ -442,7 +470,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `Configurations/OrderConfiguration.cs`, com o índice único parcial do código, o índice único do token e `xmin`;
   - migration `AddOrders`;
   - `backend/src/EasyMenu.Application/Abstractions/{IPaymentGateway.cs,IPickupCodeGenerator.cs}`;
-  - `backend/src/EasyMenu.Application/Orders/{CheckoutService.cs,RandomPickupCodeGenerator.cs,OrderMappings.cs}` (o retry de até 5 tentativas na violação do índice do código);
+  - `backend/src/EasyMenu.Application/Orders/{CheckoutService.cs,RandomPickupCodeGenerator.cs,OrderMappings.cs}` (o retry de até 5 tentativas captura `UniqueConstraintViolationException` de `ix_orders_establishment_id_pickup_code` ou `ix_orders_public_token`, research R17; os índices recebem esses nomes via `HasDatabaseName`);
   - `backend/src/EasyMenu.Infrastructure/Payments/FakePaymentGateway.cs`;
   - `backend/src/EasyMenu.Api/Controllers/PublicOrdersController.cs` (`[AllowAnonymous]`).
 - [ ] T098 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/CheckoutRateLimitTests.cs` (depende de: T047, T094), com `WithRateLimits(2)`:
@@ -551,7 +579,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
 - [ ] T062 [US3] [TEST-BACK] Helpers e testes do hub da cozinha (depende de: T060):
   - helpers `ConnectKitchenHubAsync(token)` (LongPolling + `HttpMessageHandlerFactory` do TestServer) e `WaitForEventAsync<T>(connection, name, timeout 5s)` em `backend/tests/EasyMenu.IntegrationTests/Infrastructure/HubTestHelpers.cs`;
   - `backend/tests/EasyMenu.IntegrationTests/Realtime/KitchenHubTests.cs`:
-    - conectar sem token falha (401 no negotiate);
+    - conectar sem token falha: o negotiate dá 401 `application/problem+json` `unauthorized` (R16);
     - kitchen e owner conectam;
     - um checkout gera `OrderCreated` com `KitchenOrder`;
     - mudança de parte gera `OrderUpdated`;
@@ -659,6 +687,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 - [ ] T079 [P] [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Staff/StaffEndpointsTests.cs` (depende de: T006):
   - `POST /api/staff` dá 201 e o login com as credenciais dá 200 com `role=kitchen`;
   - e-mail já usado por qualquer conta, inclusive o Dono e em outra caixa, dá 409 `email_taken`;
+  - dois `POST /api/staff` simultâneos com o mesmo e-mail dão um 201 e um 409 `email_taken`, nunca 500 (R17);
   - `GET /api/staff` lista só a Cozinha do próprio estabelecimento (ativos e inativos), sem o Dono;
   - `PUT /api/staff/{id}/deactivate` dá 200 com `isActive=false`, e repetir dá 200;
   - depois de desativar, **o token já emitido** dá 401 em `GET /api/auth/me`, e o login dá 401 `invalid_credentials`;
@@ -744,6 +773,13 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - `frontend/Dockerfile` (multi-stage: `node:24` build → `nginx:alpine`), `frontend/.dockerignore` e `frontend/nginx/default.conf.template`;
   - no template: fallback SPA para `index.html`, os headers de research R15 com `envsubst` de `API_ORIGIN`/`API_WS_ORIGIN`, e `index.html` sem cache;
   - `security.autoCsp: true` no build de produção em `frontend/angular.json` (ajustar `inlineCritical` se gerar violação).
+- [ ] T112 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/ForwardedHeadersTests.cs` (depende de: T094). Usa um `IStartupFilter` de teste que fixa `Connection.RemoteIpAddress = 127.0.0.1` e `WithRateLimits(2)`:
+  - **com** `ForwardedHeaders:KnownProxies:0=127.0.0.1`: 3 logins com `X-Forwarded-For: 203.0.113.1` fazem o 3º dar 429, enquanto `203.0.113.2` ainda não é limitado (partição pelo IP real do cliente);
+  - **sem** proxy configurado (padrão): `X-Forwarded-For` é ignorado; 3 logins com XFF diferentes fazem o 3º dar 429 (spoofing não fura o limite).
+- [ ] T113 [IMPL-BACK] `UseForwardedHeaders` em `Program.cs`, antes de `UseRateLimiter` (depende de: T095, T112). T112 verde.
+  - `XForwardedFor | XForwardedProto` e `ForwardLimit = 1`;
+  - `KnownProxies`/`KnownNetworks` lidos de `ForwardedHeaders:KnownProxies` e `ForwardedHeaders:KnownNetworks` (CIDR), e lista vazia significa não confiar em ninguém;
+  - documentar as chaves em `appsettings.json`, com lista vazia.
 
 ---
 
@@ -774,6 +810,9 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - T100→T101 depois de T072;
   - T102→T103 depois dos fronts de login/cadastro/checkout;
   - T104→T105 a qualquer momento após T017.
+- **Decisões pós-Foundational (T106–T113)**:
+  - T106→T107, T108→T109 e T110→T111 entram já (Foundational) e têm prioridade, porque o contrato novo deixa vermelhos o contrato e o build do front até T107 e T109;
+  - T112→T113 (Polish) dependem só de T094/T095.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
 
@@ -791,7 +830,8 @@ depois vem a próxima fatia. O Dev nunca começa uma fatia cujo teste não estej
 | 3 | T027, T028, **T096**, T043, T045–T048, **T098** | T029, **T097**, T044, T049, **T099** | T041, T042, T050, T052, T054, T056 | T051, T053, T055, T058 |
 | 4 | T059, T060, T062, **T083** | T061, T063, **T084** | T057, T064, T066, T068–T070 | T065, T067 |
 | 5 | T071, **T100**, T081 | T072, **T101**, T082 | T073, T075, T077, T078, T085, T086 | T074, T076, T087 |
-| 6 | T089, T090 | T093 | T088, T091, **T102**, **T104** | T092, **T103**, **T105** |
+| 6 | T089, T090, **T112** | T093, **T113** | T088, T091, **T102**, **T104** | T092, **T103**, **T105** |
+| já (prioridade) | **T106**, **T110** | **T107**, **T111** | **T108** | **T109** |
 
 ## Parallel Examples
 
@@ -832,11 +872,11 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | Fase | Tarefas | TEST-BACK | IMPL-BACK | TEST-FRONT | IMPL-FRONT |
 |---|---|---|---|---|---|
 | Setup | 4 | 1 | 2 | 0 | 1 |
-| Foundational | 16 | 6 | 7 | 2 | 1 |
+| Foundational | 22 | 8 | 9 | 3 | 2 |
 | US1 | 26 | 8 | 5 | 9 | 4 |
 | US2 | 18 | 6 | 3 | 5 | 4 |
 | US3 | 12 | 3 | 2 | 5 | 2 |
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
-| Polish | 9 | 2 | 1 | 3 | 3 |
-| **Total** | **105** | **31** | **25** | **31** | **18** |
+| Polish | 11 | 3 | 2 | 3 | 3 |
+| **Total** | **113** | **34** | **28** | **32** | **19** |
