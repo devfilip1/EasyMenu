@@ -596,7 +596,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - a URL vira `/pedido/…` com o código no formato;
   - `/m/inexistente` mostra a mensagem;
   - um item que fica esgotado via API com o carrinho aberto faz a compra ser recusada com o nome do item.
-- [ ] T058 [US2] [IMPL-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.ts`, versão estática (depende de: T056). T056 verde, e T057 verde junto com T049 e T055.
+- [X] T058 [US2] [IMPL-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.ts`, versão estática (depende de: T056). T056 verde, e T057 verde junto com T049 e T055.
 
 **Checkpoint US2**: T057 verde.
 
