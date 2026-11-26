@@ -4,6 +4,7 @@ using EasyMenu.Application.Common;
 using EasyMenu.Domain.Common;
 using EasyMenu.Domain.Establishments;
 using EasyMenu.Domain.Menu;
+using EasyMenu.Domain.Orders;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -23,6 +24,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
     public DbSet<Category> Categories => Set<Category>();
 
     public DbSet<MenuItem> MenuItems => Set<MenuItem>();
+
+    public DbSet<Order> Orders => Set<Order>();
 
     /// <summary>Read by the tenant query filter on every query (null = anonymous: tenant data is hidden).</summary>
     private Guid? CurrentEstablishmentId => tenant.EstablishmentId;

@@ -531,7 +531,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - o `pickupCode` usado como token dá 404.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `GET /api/public/orders/{publicToken}`.
-- [ ] T049 [US2] [IMPL-BACK] Pedido e checkout (depende de: T044, T045, T046, T047, T048). T045–T048 verdes.
+- [X] T049 [US2] [IMPL-BACK] Pedido e checkout (depende de: T044, T045, T046, T047, T048). T045–T048 verdes.
   - `backend/src/EasyMenu.Domain/Orders/{Order.cs,OrderItem.cs,OrderPart.cs,OrderStatus.cs,PartStatus.cs,PickupCode.cs,PublicToken.cs}`;
   - `Configurations/OrderConfiguration.cs`, com o índice único parcial do código, o índice único do token e `xmin`;
   - migration `AddOrders`;

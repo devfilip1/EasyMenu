@@ -3,18 +3,24 @@ using EasyMenu.Domain.Menu;
 namespace EasyMenu.Domain.Orders;
 
 /// <summary>The part of an order prepared by one station.</summary>
-/// <remarks>Stub created by the test author (T045) so the tests compile; implementation belongs to T049.</remarks>
 public sealed class OrderPart
 {
-    private OrderPart()
+    private OrderPart(Guid id, Station station, PartStatus status, DateTimeOffset updatedAt)
     {
+        Id = id;
+        Station = station;
+        Status = status;
+        UpdatedAt = updatedAt;
     }
 
-    public Guid Id => throw new NotImplementedException();
+    public Guid Id { get; private set; }
 
-    public Station Station => throw new NotImplementedException();
+    public Station Station { get; private set; }
 
-    public PartStatus Status => throw new NotImplementedException();
+    public PartStatus Status { get; private set; }
 
-    public DateTimeOffset UpdatedAt => throw new NotImplementedException();
+    public DateTimeOffset UpdatedAt { get; private set; }
+
+    internal static OrderPart Received(Station station, DateTimeOffset now) =>
+        new(Guid.CreateVersion7(), station, PartStatus.Received, now);
 }

@@ -147,6 +147,166 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                     b.ToTable("menu_items", (string)null);
                 });
 
+            modelBuilder.Entity("EasyMenu.Domain.Orders.Order", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CustomerName")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("customer_name");
+
+                    b.Property<Guid>("EstablishmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("establishment_id");
+
+                    b.Property<string>("PaymentTransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("payment_transaction_id");
+
+                    b.Property<DateTimeOffset?>("PickedUpAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("picked_up_at");
+
+                    b.Property<string>("PickupCode")
+                        .IsRequired()
+                        .HasMaxLength(4)
+                        .HasColumnType("character(4)")
+                        .HasColumnName("pickup_code")
+                        .IsFixedLength();
+
+                    b.Property<string>("PublicToken")
+                        .IsRequired()
+                        .HasMaxLength(43)
+                        .HasColumnType("character(43)")
+                        .HasColumnName("public_token")
+                        .IsFixedLength();
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<long>("TotalCents")
+                        .HasColumnType("bigint")
+                        .HasColumnName("total_cents");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_orders");
+
+                    b.HasIndex("PublicToken")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_public_token");
+
+                    b.HasIndex("EstablishmentId", "PickupCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_orders_establishment_id_pickup_code")
+                        .HasFilter("status <> 'picked_up'");
+
+                    b.HasIndex("EstablishmentId", "Status", "CreatedAt")
+                        .IsDescending(false, false, true)
+                        .HasDatabaseName("ix_orders_establishment_id_status_created_at");
+
+                    b.ToTable("orders", (string)null);
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Orders.OrderItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("MenuItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("menu_item_id");
+
+                    b.Property<string>("NameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name_snapshot");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Station")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("station");
+
+                    b.Property<long>("SubtotalCents")
+                        .HasColumnType("bigint")
+                        .HasColumnName("subtotal_cents");
+
+                    b.Property<long>("UnitPriceCents")
+                        .HasColumnType("bigint")
+                        .HasColumnName("unit_price_cents");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_items");
+
+                    b.HasIndex("OrderId")
+                        .HasDatabaseName("ix_order_items_order_id");
+
+                    b.ToTable("order_items", (string)null);
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Orders.OrderPart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Station")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("station");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_order_parts");
+
+                    b.HasIndex("OrderId", "Station")
+                        .IsUnique()
+                        .HasDatabaseName("ix_order_parts_order_id_station");
+
+                    b.ToTable("order_parts", (string)null);
+                });
+
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -239,6 +399,34 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_menu_items_establishments_establishment_id");
                 });
 
+            modelBuilder.Entity("EasyMenu.Domain.Orders.Order", b =>
+                {
+                    b.HasOne("EasyMenu.Domain.Establishments.Establishment", null)
+                        .WithMany()
+                        .HasForeignKey("EstablishmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_orders_establishments_establishment_id");
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Orders.OrderItem", b =>
+                {
+                    b.HasOne("EasyMenu.Domain.Orders.Order", null)
+                        .WithMany("Items")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_order_items_orders_order_id");
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Orders.OrderPart", b =>
+                {
+                    b.HasOne("EasyMenu.Domain.Orders.Order", null)
+                        .WithMany("Parts")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_order_parts_orders_order_id");
+                });
+
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>
                 {
                     b.HasOne("EasyMenu.Domain.Establishments.Establishment", null)
@@ -247,6 +435,13 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_users_establishments_establishment_id");
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Orders.Order", b =>
+                {
+                    b.Navigation("Items");
+
+                    b.Navigation("Parts");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,5 +1,6 @@
 using EasyMenu.Application.Abstractions;
 using EasyMenu.Infrastructure.Auth;
+using EasyMenu.Infrastructure.Payments;
 using EasyMenu.Infrastructure.Persistence;
 using EasyMenu.Infrastructure.Storage;
 using Microsoft.EntityFrameworkCore;
@@ -46,6 +47,7 @@ public static class DependencyInjection
             .Validate(o => !string.IsNullOrWhiteSpace(o.ImagesPath) && o.MaxImageBytes > 0,
                 "Storage:ImagesPath must be set and Storage:MaxImageBytes must be positive.");
         services.AddSingleton<IImageStorage, LocalDiskImageStorage>();
+        services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
 
         return services;
     }

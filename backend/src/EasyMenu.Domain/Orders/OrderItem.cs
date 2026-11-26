@@ -3,25 +3,35 @@ using EasyMenu.Domain.Menu;
 namespace EasyMenu.Domain.Orders;
 
 /// <summary>Order line with the name/price snapshot taken at purchase time (constitution IV).</summary>
-/// <remarks>Stub created by the test author (T045) so the tests compile; implementation belongs to T049.</remarks>
 public sealed class OrderItem
 {
-    private OrderItem()
+    private OrderItem(Guid id, Guid menuItemId, string nameSnapshot, long unitPriceCents, int quantity, Station station)
     {
+        Id = id;
+        MenuItemId = menuItemId;
+        NameSnapshot = nameSnapshot;
+        UnitPriceCents = unitPriceCents;
+        Quantity = quantity;
+        Station = station;
+        SubtotalCents = unitPriceCents * quantity;
     }
 
-    public Guid Id => throw new NotImplementedException();
+    public Guid Id { get; private set; }
 
-    public Guid MenuItemId => throw new NotImplementedException();
+    /// <summary>Logical reference only (no FK): the menu item may be deleted later.</summary>
+    public Guid MenuItemId { get; private set; }
 
-    public string NameSnapshot => throw new NotImplementedException();
+    public string NameSnapshot { get; private set; }
 
-    public long UnitPriceCents => throw new NotImplementedException();
+    public long UnitPriceCents { get; private set; }
 
-    public int Quantity => throw new NotImplementedException();
+    public int Quantity { get; private set; }
 
-    public Station Station => throw new NotImplementedException();
+    public Station Station { get; private set; }
 
     /// <summary><c>UnitPriceCents × Quantity</c>.</summary>
-    public long SubtotalCents => throw new NotImplementedException();
+    public long SubtotalCents { get; private set; }
+
+    internal static OrderItem From(OrderLineSnapshot line, int quantity) =>
+        new(Guid.CreateVersion7(), line.MenuItemId, line.Name, line.UnitPriceCents, quantity, line.Station);
 }

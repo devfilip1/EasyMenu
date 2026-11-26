@@ -1,4 +1,5 @@
 using EasyMenu.Application.Common;
+using EasyMenu.Application.Orders;
 using EasyMenu.Domain.Common;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -62,12 +63,21 @@ public sealed class ProblemDetailsExceptionHandler(IProblemDetailsService proble
         return problem;
     }
 
-    private static ProblemDetails FromDomain(DomainException exception) => Create(
-        StatusFor(exception.Code),
-        exception.Code,
-        exception is ValidationException validation
-            ? new ValidationProblemDetails(validation.Errors.ToDictionary(e => e.Key, e => e.Value))
-            : null);
+    private static ProblemDetails FromDomain(DomainException exception)
+    {
+        var problem = Create(
+            StatusFor(exception.Code),
+            exception.Code,
+            exception is ValidationException validation
+                ? new ValidationProblemDetails(validation.Errors.ToDictionary(e => e.Key, e => e.Value))
+                : null);
+        if (exception is ItemsUnavailableException unavailable)
+        {
+            problem.Extensions[ItemsUnavailableProblem.UnavailableItemsExtension] = unavailable.Items;
+        }
+
+        return problem;
+    }
 
     // The server rejects a body above the endpoint limit while it is being read (possibly wrapped by MVC's form
     // reader), so look through the inner exceptions.

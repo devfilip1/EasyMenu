@@ -1,5 +1,6 @@
 using EasyMenu.Domain.Establishments;
 using EasyMenu.Domain.Menu;
+using EasyMenu.Domain.Orders;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,8 @@ public interface IAppDbContext
     DbSet<Category> Categories { get; }
 
     DbSet<MenuItem> MenuItems { get; }
+
+    DbSet<Order> Orders { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
