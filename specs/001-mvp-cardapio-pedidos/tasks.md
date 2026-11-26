@@ -677,7 +677,7 @@ aparece nas duas seções; avança cada parte até Pronto e marca Retirado.
     - mudança de parte gera `OrderUpdated`;
     - retirada gera `OrderPickedUp {id, pickupCode}`;
     - **isolamento**: a conexão de B não recebe nenhum evento de A em 2 s.
-- [ ] T063 [US3] [IMPL-BACK] Tempo real da cozinha (depende de: T061, T062). T062 verde.
+- [X] T063 [US3] [IMPL-BACK] Tempo real da cozinha (depende de: T061, T062). T062 verde.
   - `backend/src/EasyMenu.Application/Abstractions/IOrderNotifier.cs`;
   - `backend/src/EasyMenu.Api/Hubs/KitchenHub.cs` (`[Authorize(Policy=KitchenAccess)]`, grupo `establishment:{id}` vindo da claim);
   - `backend/src/EasyMenu.Api/Realtime/SignalROrderNotifier.cs`;

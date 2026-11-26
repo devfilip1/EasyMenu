@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace EasyMenu.Application.Orders;
 
 /// <summary>Kitchen panel (FR-025..FR-028): active orders, part transitions and pickup. Tenant-filtered.</summary>
-public sealed class KitchenService(IAppDbContext db, TimeProvider timeProvider)
+public sealed class KitchenService(IAppDbContext db, IOrderNotifier notifier, TimeProvider timeProvider)
 {
     /// <summary>Orders not picked up yet, oldest first.</summary>
     public async Task<IReadOnlyList<KitchenOrderResponse>> ListActiveAsync(CancellationToken cancellationToken)
@@ -54,19 +54,27 @@ public sealed class KitchenService(IAppDbContext db, TimeProvider timeProvider)
     private async Task<KitchenOrderResponse> ChangeAsync(
         Guid orderId, Action<Order, DateTimeOffset> change, CancellationToken cancellationToken)
     {
+        Applied applied;
         try
         {
-            return await ApplyAsync(orderId, change, cancellationToken);
+            applied = await ApplyAsync(orderId, change, cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
         {
             db.ChangeTracker.Clear();
-            return await ApplyAsync(orderId, change, cancellationToken);
+            applied = await ApplyAsync(orderId, change, cancellationToken);
         }
+
+        // After the commit, and only when something changed (repeating the current status is silent).
+        if (applied.Changed)
+        {
+            await notifier.OrderChangedAsync(applied.Order, applied.PreviousStatus, CancellationToken.None);
+        }
+
+        return ToKitchenOrder(applied.Order);
     }
 
-    private async Task<KitchenOrderResponse> ApplyAsync(
-        Guid orderId, Action<Order, DateTimeOffset> change, CancellationToken cancellationToken)
+    private async Task<Applied> ApplyAsync(Guid orderId, Action<Order, DateTimeOffset> change, CancellationToken cancellationToken)
     {
         var order = await db.Orders
             .Include(o => o.Items)
@@ -74,8 +82,17 @@ public sealed class KitchenService(IAppDbContext db, TimeProvider timeProvider)
             .SingleOrDefaultAsync(o => o.Id == orderId, cancellationToken)
             ?? throw new NotFoundException();
 
+        var previousStatus = order.Status;
+        var previousParts = PartStatuses(order);
         change(order, timeProvider.GetUtcNowForStorage());
         await db.SaveChangesAsync(cancellationToken);
-        return ToKitchenOrder(order);
+
+        var changed = order.Status != previousStatus || !PartStatuses(order).SequenceEqual(previousParts);
+        return new Applied(order, previousStatus, changed);
     }
+
+    private static List<(Station, PartStatus)> PartStatuses(Order order) =>
+        order.Parts.OrderBy(p => p.Station).Select(p => (p.Station, p.Status)).ToList();
+
+    private sealed record Applied(Order Order, OrderStatus PreviousStatus, bool Changed);
 }

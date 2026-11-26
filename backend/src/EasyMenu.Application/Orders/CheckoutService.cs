@@ -16,6 +16,7 @@ public sealed class CheckoutService(
     IAppDbContext db,
     IPickupCodeGenerator pickupCodes,
     IPaymentGateway paymentGateway,
+    IOrderNotifier notifier,
     TimeProvider timeProvider)
 {
     public const string OrderNotFound = "order_not_found";
@@ -45,6 +46,8 @@ public sealed class CheckoutService(
         order.RecordPayment(payment.TransactionId ?? string.Empty);
         db.Orders.Add(order);
         await SaveWithFreshIdentifiersOnCollisionAsync(order, cancellationToken);
+        // After the commit; not tied to the request token, so a committed order is always announced.
+        await notifier.OrderCreatedAsync(order, CancellationToken.None);
 
         return OrderMappings.ToPublicOrder(order, establishment);
     }

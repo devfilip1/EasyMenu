@@ -4,6 +4,7 @@ using EasyMenu.Api.ErrorHandling;
 using EasyMenu.Api.Media;
 using EasyMenu.Api.OpenApi;
 using EasyMenu.Api.RateLimiting;
+using EasyMenu.Api.Realtime;
 using EasyMenu.Api.Serialization;
 using EasyMenu.Application;
 using EasyMenu.Infrastructure;
@@ -31,7 +32,7 @@ builder.Services.AddOpenApi(options => options
     .AddSchemaTransformer<StringEnumSchemaTransformer>()
     .AddSchemaTransformer<EmailFormatSchemaTransformer>()
     .AddOperationTransformer<RequiredFormFieldsOperationTransformer>());
-builder.Services.AddSignalR();
+builder.Services.AddApiRealtime();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 // A relative Storage:ImagesPath is relative to the content root, both for uploads and for /media.
@@ -86,7 +87,7 @@ app.UseAuthorization();
 app.UseRateLimiter();
 
 app.MapControllers();
-// SignalR hubs are mapped here as features add them, e.g. app.MapHub<OrdersHub>("/hubs/orders").
+app.MapApiHubs();
 
 app.Run();
 
