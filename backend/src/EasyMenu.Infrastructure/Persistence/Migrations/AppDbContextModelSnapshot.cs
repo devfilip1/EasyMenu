@@ -54,6 +54,35 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                     b.ToTable("establishments", (string)null);
                 });
 
+            modelBuilder.Entity("EasyMenu.Domain.Menu.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("EstablishmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("establishment_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("Id")
+                        .HasName("pk_categories");
+
+                    b.HasIndex("EstablishmentId", "Position")
+                        .HasDatabaseName("ix_categories_establishment_id_position");
+
+                    b.ToTable("categories", (string)null);
+                });
+
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -117,6 +146,16 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_users_normalized_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Menu.Category", b =>
+                {
+                    b.HasOne("EasyMenu.Domain.Establishments.Establishment", null)
+                        .WithMany()
+                        .HasForeignKey("EstablishmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_categories_establishments_establishment_id");
                 });
 
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>

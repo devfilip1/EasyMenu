@@ -1,5 +1,6 @@
 using EasyMenu.Application.Auth;
 using EasyMenu.Application.Establishments;
+using EasyMenu.Application.Menu;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EasyMenu.Application;
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddScoped<AuthService>();
         services.AddScoped<EstablishmentService>();
+        services.AddScoped<CategoryService>();
         return services;
     }
 }

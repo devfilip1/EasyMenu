@@ -2,6 +2,7 @@ using System.Reflection;
 using EasyMenu.Application.Abstractions;
 using EasyMenu.Domain.Common;
 using EasyMenu.Domain.Establishments;
+using EasyMenu.Domain.Menu;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
     public DbSet<Establishment> Establishments => Set<Establishment>();
 
     public DbSet<User> Users => Set<User>();
+
+    public DbSet<Category> Categories => Set<Category>();
 
     /// <summary>Read by the tenant query filter on every query (null = anonymous: tenant data is hidden).</summary>
     private Guid? CurrentEstablishmentId => tenant.EstablishmentId;

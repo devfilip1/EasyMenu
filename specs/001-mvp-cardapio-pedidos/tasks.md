@@ -293,7 +293,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - **isolamento**: B renomear ou apagar categoria de A dá 404, e a listagem de B não traz as de A.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `GET /api/categories`, `POST /api/categories`, `PUT /api/categories/order`, `PUT /api/categories/{id}` e `DELETE /api/categories/{id}`. Ampliar o `ApiDriver` com `CreateCategoryAsync`.
-- [ ] T023 [US1] [IMPL-BACK] Categorias de ponta a ponta (depende de: T021, T022). T021 e T022 verdes.
+- [X] T023 [US1] [IMPL-BACK] Categorias de ponta a ponta (depende de: T021, T022). T021 e T022 verdes.
   - `backend/src/EasyMenu.Domain/Menu/Category.cs`;
   - `backend/src/EasyMenu.Infrastructure/Persistence/Configurations/CategoryConfiguration.cs`;
   - migration `AddCategories`;

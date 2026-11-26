@@ -168,7 +168,6 @@ paths:
   # ---------------------------------------------------------------- Categories (Owner)
   /api/categories:
     get:
-      x-pending: true
       tags: [Categories]
       operationId: listCategories
       summary: Categorias do estabelecimento, na ordem definida.
@@ -183,7 +182,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
-      x-pending: true
       tags: [Categories]
       operationId: createCategory
       summary: Cria categoria no fim da lista.
@@ -204,7 +202,6 @@ paths:
 
   /api/categories/order:
     put:
-      x-pending: true
       tags: [Categories]
       operationId: reorderCategories
       summary: Define a ordem das categorias; precisa conter todos os ids, sem repetição.
@@ -223,7 +220,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     put:
-      x-pending: true
       tags: [Categories]
       operationId: renameCategory
       requestBody:
@@ -242,7 +238,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
-      x-pending: true
       tags: [Categories]
       operationId: deleteCategory
       summary: Remove categoria vazia (FR-006).

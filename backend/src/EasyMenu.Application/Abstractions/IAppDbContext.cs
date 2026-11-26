@@ -1,4 +1,5 @@
 using EasyMenu.Domain.Establishments;
+using EasyMenu.Domain.Menu;
 using EasyMenu.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,8 @@ public interface IAppDbContext
     DbSet<Establishment> Establishments { get; }
 
     DbSet<User> Users { get; }
+
+    DbSet<Category> Categories { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
