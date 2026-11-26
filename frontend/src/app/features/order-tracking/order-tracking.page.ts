@@ -1,18 +1,22 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   effect,
   inject,
   input,
   signal,
   untracked,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Api } from '../../api/generated/api';
 import { getPublicOrder } from '../../api/generated/fn/public-orders/get-public-order';
 import { OrderStatus } from '../../api/generated/models/order-status';
 import { PublicOrder } from '../../api/generated/models/public-order';
 import { errorCode, problemMessage } from '../../core/errors/problem';
+import { OrderRealtimeService } from '../../core/realtime/order-realtime.service';
+import { OrderHistoryStore } from '../../core/storage/order-history.store';
 import { BrlPipe } from '../../shared/brl.pipe';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -42,6 +46,16 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
             <p>Pedido de {{ current.customerName }}</p>
           }
         </header>
+
+        @if (current.status === 'ready') {
+          <p class="ready-banner" role="alert">
+            Seu pedido está pronto — retire no balcão. Código
+            <strong>{{ current.pickupCode }}</strong>
+          </p>
+        }
+        @if (realtime.state() === 'reconnecting') {
+          <p class="muted" aria-live="polite">Reconectando para receber atualizações…</p>
+        }
 
         <section class="card code-card" aria-labelledby="pickup-label">
           <p id="pickup-label" class="muted">Código de retirada</p>
@@ -78,6 +92,16 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   `,
   styles: `
     .code-card {
+      text-align: center;
+    }
+    .ready-banner {
+      margin: 0;
+      padding: 1rem;
+      border-radius: var(--radius);
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 1.15rem;
+      font-weight: 700;
       text-align: center;
     }
     .code-card p {
@@ -119,6 +143,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 })
 export class OrderTrackingPage {
   private readonly api = inject(Api);
+  private readonly history = inject(OrderHistoryStore);
+  protected readonly realtime = inject(OrderRealtimeService);
 
   /** Route parameter `:publicToken` (component input binding). */
   readonly publicToken = input.required<string>();
@@ -129,21 +155,47 @@ export class OrderTrackingPage {
   constructor() {
     effect(() => {
       const publicToken = this.publicToken();
-      untracked(() => void this.load(publicToken));
+      untracked(() => void this.open(publicToken));
     });
+    this.realtime.resync$
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => void this.load(this.publicToken()));
+    this.realtime.orderUpdated$.pipe(takeUntilDestroyed()).subscribe((order) => {
+      if (order.publicToken === this.publicToken()) this.show(order);
+    });
+    inject(DestroyRef).onDestroy(() => void this.realtime.stop());
   }
 
   protected statusLabel(status: OrderStatus): string {
     return STATUS_LABELS[status] ?? status;
   }
 
-  private async load(publicToken: string): Promise<void> {
+  /** First load, then live updates through the orders hub. */
+  private async open(publicToken: string): Promise<void> {
     this.order.set(null);
+    if (await this.load(publicToken)) await this.realtime.watch(publicToken);
+  }
+
+  private async load(publicToken: string): Promise<boolean> {
     this.error.set(null);
     try {
-      this.order.set(await this.api.invoke(getPublicOrder, { publicToken }));
+      const order = await this.api.invoke(getPublicOrder, { publicToken });
+      this.show(order);
+      this.history.remember({
+        publicToken: order.publicToken,
+        slug: order.establishment.slug,
+        pickupCode: order.pickupCode,
+        createdAt: order.createdAt,
+      });
+      return true;
     } catch (err) {
+      this.order.set(null);
       this.error.set(problemMessage(errorCode(err, 'order_not_found')));
+      return false;
     }
+  }
+
+  private show(order: PublicOrder): void {
+    this.order.set(order);
   }
 }

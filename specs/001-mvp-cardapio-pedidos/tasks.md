@@ -726,7 +726,7 @@ recarregar, junto com o aviso de retirada.
   - resync recarrega via `getPublicOrder`;
   - abrir a página grava em `OrderHistoryStore`;
   - o cardápio público mostra o link "Acompanhar meu pedido" para o último pedido daquele slug.
-- [ ] T076 [US4] [IMPL-FRONT] Tempo real em `frontend/src/app/features/order-tracking/order-tracking.page.ts` e link de histórico em `public-menu.page.ts` (depende de: T058, T074, T075). T075 verde.
+- [X] T076 [US4] [IMPL-FRONT] Tempo real em `frontend/src/app/features/order-tracking/order-tracking.page.ts` e link de histórico em `public-menu.page.ts` (depende de: T058, T074, T075). T075 verde.
 - [X] T077 [US4] [TEST-FRONT] Helper E2E `frontend/e2e/support/kitchen.ts` (`advancePart(token, orderId, station, status)` e `pickUp(token, orderId)`), que avança partes e marca a retirada via API com o token do Dono (depende de: T069).
 - [X] T078 [US4] [TEST-FRONT] `frontend/e2e/us4-tracking.spec.ts` (depende de: T077). Fluxo:
   - comprar;

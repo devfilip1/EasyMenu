@@ -1,17 +1,20 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   input,
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Api } from '../../api/generated/api';
 import { getPublicMenu } from '../../api/generated/fn/public-menu/get-public-menu';
 import { PublicMenu } from '../../api/generated/models/public-menu';
 import { PublicMenuItem } from '../../api/generated/models/public-menu-item';
 import { errorCode, problemMessage } from '../../core/errors/problem';
+import { OrderHistoryStore } from '../../core/storage/order-history.store';
 import { BrlPipe } from '../../shared/brl.pipe';
 import { CartSheetComponent } from './cart-sheet.component';
 import { CartStore } from './cart.store';
@@ -21,7 +24,7 @@ import { MenuItemCardComponent } from './menu-item-card.component';
 @Component({
   selector: 'app-public-menu-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [BrlPipe, CartSheetComponent, MenuItemCardComponent],
+  imports: [BrlPipe, CartSheetComponent, MenuItemCardComponent, RouterLink],
   template: `
     <main class="page stack" [class.with-bar]="cart.count() > 0">
       @if (error()) {
@@ -33,6 +36,11 @@ import { MenuItemCardComponent } from './menu-item-card.component';
         <header>
           <h1>{{ current.establishment.name }}</h1>
           <p class="muted">Escolha os itens, pague pelo app e retire no balcão.</p>
+          @if (lastOrder(); as last) {
+            <a class="btn btn-sm" [routerLink]="['/pedido', last.publicToken]">
+              Acompanhar meu pedido
+            </a>
+          }
         </header>
 
         @for (category of current.categories; track category.id) {
@@ -138,6 +146,7 @@ import { MenuItemCardComponent } from './menu-item-card.component';
 export class PublicMenuPage {
   private readonly api = inject(Api);
   protected readonly cart = inject(CartStore);
+  private readonly history = inject(OrderHistoryStore);
 
   /** Route parameter `:slug` (component input binding). */
   readonly slug = input.required<string>();
@@ -145,6 +154,8 @@ export class PublicMenuPage {
   protected readonly menu = signal<PublicMenu | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly cartOpen = signal(false);
+  /** The guest's latest order at this establishment (this device only). */
+  protected readonly lastOrder = computed(() => this.history.lastForSlug(this.slug()));
 
   constructor() {
     effect(() => {
