@@ -262,7 +262,7 @@ infraestrutura de testes e núcleo do front. ⚠️ Nenhuma story começa antes 
   - **sem** proxy configurado (padrão): `X-Forwarded-For` é ignorado; 3 logins com XFF diferentes fazem o 3º dar 429 (spoofing não fura o limite);
   - **proxy não confiável**: com `KnownProxies:0=10.0.0.1` (diferente do `RemoteIpAddress` 127.0.0.1), o XFF também é ignorado;
   - **rede confiável**: com `KnownNetworks:0=127.0.0.0/8`, o XFF é respeitado como no primeiro caso.
-- [ ] T113 [IMPL-BACK] `UseForwardedHeaders` em `Program.cs`, antes de `UseRateLimiter` (depende de: T095, T112). T112 verde.
+- [X] T113 [IMPL-BACK] `UseForwardedHeaders` em `Program.cs`, antes de `UseRateLimiter` (depende de: T095, T112). T112 verde.
   - `XForwardedFor | XForwardedProto` e `ForwardLimit = 1`;
   - `KnownProxies`/`KnownNetworks` lidos de `ForwardedHeaders:KnownProxies` e `ForwardedHeaders:KnownNetworks` (CIDR), e lista vazia significa não confiar em ninguém;
   - documentar as chaves em `appsettings.json`, com lista vazia.

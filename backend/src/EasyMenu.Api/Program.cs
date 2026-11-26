@@ -39,6 +39,7 @@ builder.Services.PostConfigure<StorageOptions>(options =>
     options.ImagesPath = Path.GetFullPath(options.ImagesPath, builder.Environment.ContentRootPath));
 builder.Services.AddApiAuthentication();
 builder.Services.AddApiRateLimiting();
+builder.Services.AddApiForwardedHeaders();
 
 builder.Services.AddCors(options =>
 {
@@ -64,6 +65,8 @@ if (app.Environment.IsDevelopment())
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
 
+// First: the real client IP (behind a trusted proxy) must be known before rate limiting.
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
 
 if (!app.Environment.IsProduction())
