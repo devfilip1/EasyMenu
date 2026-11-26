@@ -90,6 +90,11 @@ jobs:
         working-directory: frontend
     env:
       CI: true
+      # The API is started by Playwright's webServer and inherits these: the suite creates owners
+      # and orders faster than the production-like limits allow (Auth is 10/60 s by default).
+      RateLimiting__Auth__PermitLimit: 10000
+      RateLimiting__Checkout__PermitLimit: 10000
+      RateLimiting__OrderSubscribe__PermitLimit: 10000
     steps:
       - uses: actions/checkout@v4
 
@@ -152,6 +157,11 @@ jobs:
         working-directory: frontend
     env:
       CI: true
+      # The API is started by Playwright's webServer and inherits these: the suite creates owners
+      # and orders faster than the production-like limits allow (Auth is 10/60 s by default).
+      RateLimiting__Auth__PermitLimit: 10000
+      RateLimiting__Checkout__PermitLimit: 10000
+      RateLimiting__OrderSubscribe__PermitLimit: 10000
       # Selects the `prod-headers` Playwright project and skips `ng serve` (see playwright.config.ts).
       E2E_PROD_URL: http://localhost:8080
       # Same origin (research R18): the browser only talks to nginx, which proxies /api/, /hubs/

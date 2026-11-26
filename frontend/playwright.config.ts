@@ -16,9 +16,23 @@ const isCI = !!process.env['CI'];
 
 const PROD_HEADERS_SPEC = /security-headers\.spec\.ts/;
 
+/**
+ * The suite registers owners and places orders by the dozen within seconds, so the API's
+ * production-like rate limits (appsettings.json, e.g. Auth 10/60 s) would answer 429 in setup.
+ * Raised only for the API started here; a value exported in the shell (or set by CI) wins.
+ * The backend's rate limiting tests use their own limits (WithRateLimits) and are unaffected.
+ */
+const E2E_RATE_LIMITS = Object.fromEntries(
+  ['Auth', 'Checkout', 'OrderSubscribe'].map((policy) => {
+    const key = `RateLimiting__${policy}__PermitLimit`;
+    return [key, process.env[key] ?? '10000'];
+  }),
+);
+
 const webServers: NonNullable<PlaywrightTestConfig['webServer']> = [
   {
     name: 'api',
+    env: E2E_RATE_LIMITS,
     // In prod-headers mode the nginx container reaches the API through host.docker.internal
     // (research R18), so the API must listen on all interfaces, not only on localhost.
     command:

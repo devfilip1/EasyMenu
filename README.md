@@ -62,8 +62,34 @@ cd frontend
 npm test                        # testes de componente/serviço (Vitest, runner padrão do Angular CLI)
 npm run build
 npm run e2e:install             # uma vez: baixa o Chromium do Playwright
-npm run e2e                     # Playwright (sobe o `ng serve` automaticamente)
+npm run e2e                     # Playwright (sobe a API e o `ng serve` automaticamente)
 ```
+
+### E2E completo
+
+O Playwright roda contra a API real. O `webServer` do `frontend/playwright.config.ts` sobe a API
+(`dotnet run`, porta 5080) e o `ng serve` (porta 4200); o PostgreSQL precisa estar no ar.
+
+```bash
+docker compose up -d            # PostgreSQL (obrigatório)
+cd frontend
+npm run generate:api            # tipos do client gerado usados pelos helpers de e2e/support
+npm run e2e                     # todos os specs, nos projetos mobile-chrome e desktop-chrome
+npx playwright test e2e/us2-checkout.spec.ts --project=desktop-chrome   # um spec só
+```
+
+- **Rate limit**: a suíte cria donos e pedidos aos montes em poucos segundos, e os limites do
+  `appsettings.json` (ex.: `Auth` 10 por 60 s) devolveriam 429 já no setup. Por isso a API que o
+  Playwright sobe recebe `RateLimiting__Auth__PermitLimit`, `RateLimiting__Checkout__PermitLimit` e
+  `RateLimiting__OrderSubscribe__PermitLimit` = 10000 (valores já exportados no shell têm
+  precedência). Os testes de rate limit do back usam `WithRateLimits` e não são afetados.
+- **API já rodando**: fora do CI, o Playwright reaproveita servidores que já estejam nas portas
+  5080/4200, e aí os limites acima **não** se aplicam. Pare a API antes ou suba-a com as mesmas
+  variáveis, por exemplo `RateLimiting__Auth__PermitLimit=10000 dotnet run --project src/EasyMenu.Api`.
+- **Headers de produção** (`prod-headers`): veja a seção da imagem de produção acima
+  (`E2E_PROD_URL`); nesse modo o Playwright sobe só a API.
+- **Servidores externos**: com `E2E_BASE_URL` (e `E2E_API_URL`) o Playwright não sobe nada e usa
+  os servidores informados.
 
 O CI (`.github/workflows/ci.yml`) roda backend e frontend em jobs separados.
 
