@@ -5,8 +5,13 @@ import {
   button,
   byLabel,
   chooseOption,
+  expectFieldError,
+  firstInvalidControl,
+  inPoliteLiveRegion,
   isInvalid,
+  isRequired,
   setFiles,
+  snapshotDescribedBy,
   textOf,
   typeInto,
 } from '../../../../testing/dom';
@@ -242,6 +247,72 @@ describe('MenuItemFormComponent', () => {
         expectRequest(httpMock, 'DELETE', apiUrl(deleteMenuItemPhoto.PATH, { id: CAIPIRINHA.id })),
       );
       await settle(fixture);
+    });
+  });
+
+  describe('form accessibility (convention)', () => {
+    const jpeg = () => new File([new Uint8Array([0xff, 0xd8, 0xff])], 'item.jpg', { type: 'image/jpeg' });
+
+    it('marks name, price, station and category as required and the form as novalidate', async () => {
+      await render();
+
+      for (const control of [name(), price(), station(), category()]) {
+        expect(isRequired(control), control.outerHTML.slice(0, 80)).toBe(true);
+      }
+      expect(isRequired(promo())).toBe(false);
+      expect(isRequired(description())).toBe(false);
+      expect(el.querySelector('form')?.hasAttribute('novalidate')).toBe(true);
+    });
+
+    it('links each missing required field to its own error and focuses the first one', async () => {
+      await render();
+      const required = [name(), price(), station(), category()];
+      const baselines = required.map((control) => snapshotDescribedBy(control));
+
+      await submit();
+
+      expectNoRequest(httpMock, 'POST', CREATE_URL);
+      const errors = required.map((control, i) => expectFieldError(control, undefined, baselines[i]));
+      expect(new Set(errors.map((e) => e.id)).size).toBe(errors.length);
+      expect(document.activeElement).not.toBe(document.body);
+      expect(document.activeElement).toBe(firstInvalidControl(el));
+    });
+
+    it('links the promotion rule to the promotional price field and focuses it', async () => {
+      await render();
+      await fillValid({ price: '25,00', promo: '30,00' });
+
+      await submit();
+
+      expectNoRequest(httpMock, 'POST', CREATE_URL);
+      expectFieldError(promo(), PROMO_RULE);
+      expect(document.activeElement).toBe(promo());
+    });
+
+    it.each<[number, ErrorCode]>([
+      [400, 'invalid_image_type'],
+      [413, 'image_too_large'],
+    ])('%i %s is the photo field error, inside a polite live region', async (status, code) => {
+      await render();
+      await fillValid();
+      setFiles(photo(), [jpeg()]);
+      await settle(fixture);
+      await submit();
+
+      expectRequest(httpMock, 'POST', CREATE_URL).flush(
+        { ...CAIPIRINHA, photoUrl: null },
+        { status: 201, statusText: 'Created' },
+      );
+      await settle(fixture);
+      flushProblem(
+        expectRequest(httpMock, 'PUT', apiUrl(uploadMenuItemPhoto.PATH, { id: CAIPIRINHA.id })),
+        status,
+        code,
+      );
+      await settle(fixture);
+
+      const error = expectFieldError(photo(), problemMessage(code));
+      expect(inPoliteLiveRegion(error)).toBe(true);
     });
   });
 });
