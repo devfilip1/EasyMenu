@@ -193,4 +193,67 @@ describe('CartStore', () => {
     const byId = Object.fromEntries(cart.lines().map((l) => [l.menuItemId, l.unavailable]));
     expect(byId).toEqual({ [CAIPIRINHA.id]: false, [BATATA.id]: true });
   });
+
+  describe('restoring a tampered localStorage (T132)', () => {
+    const line = (menuItemId: string, quantity: unknown, unitPriceCents = 1990) => ({
+      menuItemId,
+      name: `Item ${menuItemId}`,
+      unitPriceCents,
+      quantity,
+      unavailable: false,
+    });
+
+    /** Writes raw storage for SLUG and restores it in a fresh store. */
+    function restore(raw: string): CartStore {
+      localStorage.setItem(cartStorageKey(SLUG), raw);
+      const fresh = TestBed.runInInjectionContext(() => new CartStore());
+      fresh.useSlug(SLUG);
+      return fresh;
+    }
+
+    const quantities = (store: CartStore) =>
+      Object.fromEntries(store.lines().map((l) => [l.menuItemId, l.quantity]));
+
+    it.each([
+      [0, 1],
+      [-3, 1],
+      [150, 99],
+      [99, 99],
+      [1, 1],
+    ])('quantity %s is clamped to %s', (stored, expected) => {
+      const store = restore(JSON.stringify([line('a', stored)]));
+
+      expect(quantities(store)).toEqual({ a: expected });
+    });
+
+    it.each([['abc'], [null], [1.5], [undefined], [[2]], ['3']])(
+      'a non-integer quantity (%j) drops the line',
+      (stored) => {
+        const store = restore(JSON.stringify([line('bad', stored), line('ok', 2)]));
+
+        expect(quantities(store)).toEqual({ ok: 2 });
+      },
+    );
+
+    it.each([['{oops'], ['{"lines": 1}'], ['null'], ['42']])(
+      'unusable storage (%s) gives an empty cart without throwing',
+      (raw) => {
+        let store: CartStore | undefined;
+        expect(() => (store = restore(raw))).not.toThrow();
+
+        expect(store!.lines()).toEqual([]);
+        expect(store!.total()).toBe(0);
+      },
+    );
+
+    it('recomputes the total from the corrected quantities', () => {
+      const store = restore(
+        JSON.stringify([line('a', 0, 1990), line('b', 150, 3000), line('c', 'abc', 1000)]),
+      );
+
+      expect(quantities(store)).toEqual({ a: 1, b: 99 });
+      expect(store.total()).toBe(1990 + 99 * 3000);
+      expect(store.count()).toBe(100);
+    });
+  });
 });
