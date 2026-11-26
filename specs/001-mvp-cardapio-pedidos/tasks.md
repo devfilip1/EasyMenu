@@ -701,7 +701,7 @@ pedido no mesmo aparelho.
 **Independent Test**: E2E T078. As mudanças feitas na cozinha aparecem na página do pedido sem
 recarregar, junto com o aviso de retirada.
 
-- [ ] T071 [US4] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Realtime/OrdersHubTests.cs` (depende de: T062), com o helper `ConnectOrdersHubAsync()`:
+- [X] T071 [US4] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Realtime/OrdersHubTests.cs` (depende de: T062), com o helper `ConnectOrdersHubAsync()`:
   - `SubscribeToOrder(tokenValido)` retorna `true` e `SubscribeToOrder("inventado")` retorna `false`;
   - recebe `OrderUpdated` (`PublicOrder`) quando o pedido vai para `in_preparation`, `ready` e `picked_up`;
   - **não** recebe evento quando a segunda parte entra em preparo e o status do pedido não muda;

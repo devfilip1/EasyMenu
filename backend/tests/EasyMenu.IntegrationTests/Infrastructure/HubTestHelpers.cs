@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Http.Connections;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,7 +12,7 @@ public static class HubTestHelpers
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
 
     /// <summary>Builds (without starting) a hub connection to <paramref name="path"/> on the test server.</summary>
-    public static HubConnection BuildHubConnection(EasyMenuApiFactory factory, string path, string? token)
+    public static HubConnection BuildHubConnection(WebApplicationFactory<Program> factory, string path, string? token)
     {
         var server = factory.Server;
         return new HubConnectionBuilder()
@@ -29,9 +30,17 @@ public static class HubTestHelpers
     }
 
     /// <summary>Connects to <c>/hubs/kitchen</c> with the given bearer token (throws if the server refuses it).</summary>
-    public static async Task<HubConnection> ConnectKitchenHubAsync(this EasyMenuApiFactory factory, string? token)
+    public static Task<HubConnection> ConnectKitchenHubAsync(this EasyMenuApiFactory factory, string? token) =>
+        ConnectAsync(factory, "/hubs/kitchen", token);
+
+    /// <summary>Connects anonymously to <c>/hubs/orders</c> (public order page).</summary>
+    public static async Task<HubConnection> ConnectOrdersHubAsync(this WebApplicationFactory<Program> factory) =>
+        await ConnectAsync(factory, "/hubs/orders", token: null);
+
+    /// <summary>Connects to <paramref name="path"/> on the test server (throws if the server refuses it).</summary>
+    public static async Task<HubConnection> ConnectAsync(WebApplicationFactory<Program> factory, string path, string? token)
     {
-        var connection = BuildHubConnection(factory, "/hubs/kitchen", token);
+        var connection = BuildHubConnection(factory, path, token);
         try
         {
             await connection.StartAsync().WaitAsync(DefaultTimeout);
@@ -42,6 +51,14 @@ public static class HubTestHelpers
             await connection.DisposeAsync();
             throw;
         }
+    }
+
+    /// <summary>Records every <paramref name="eventName"/> payload received by <paramref name="connection"/>, in order.</summary>
+    public static ConcurrentQueue<T> RecordPayloads<T>(HubConnection connection, string eventName)
+    {
+        var received = new ConcurrentQueue<T>();
+        connection.On<T>(eventName, payload => received.Enqueue(payload));
+        return received;
     }
 
     /// <summary>
