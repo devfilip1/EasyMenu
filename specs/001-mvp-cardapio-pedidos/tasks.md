@@ -228,8 +228,8 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
 
 ### Fatia 1b: Categorias (back)
 
-- [ ] T021 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Menu/CategoryTests.cs`: nome 1–60 caracteres com trim; `Rename`; `MoveTo(position)`.
-- [ ] T022 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/CategoriesEndpointsTests.cs`:
+- [X] T021 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.UnitTests/Domain/Menu/CategoryTests.cs`: nome 1–60 caracteres com trim; `Rename`; `MoveTo(position)`.
+- [X] T022 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Menu/CategoriesEndpointsTests.cs`:
   - criar dá 201 e a nova categoria vai para o fim (`position` = n);
   - a listagem respeita a ordem;
   - renomear;
