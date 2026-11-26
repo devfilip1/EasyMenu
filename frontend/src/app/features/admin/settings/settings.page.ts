@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
   computed,
   inject,
@@ -12,11 +13,13 @@ import { getEstablishment } from '../../../api/generated/fn/establishment/get-es
 import { updateEstablishment } from '../../../api/generated/fn/establishment/update-establishment';
 import { Establishment } from '../../../api/generated/models/establishment';
 import { errorCode, problemFieldErrors, problemMessage } from '../../../core/errors/problem';
+import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
+import { fieldErrorId, focusFirstInvalid } from '../../../shared/forms/form-a11y';
 
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, FieldErrorComponent],
   template: `
     <h1>Estabelecimento</h1>
 
@@ -51,12 +54,12 @@ import { errorCode, problemFieldErrors, problemMessage } from '../../../core/err
               id="settings-name"
               type="text"
               formControlName="name"
+              aria-required="true"
               (input)="nameServerError.set(null); saved.set(false)"
               [attr.aria-invalid]="!!nameError()"
+              [attr.aria-describedby]="nameErrorId"
             />
-            @if (nameError(); as message) {
-              <span class="error">{{ message }}</span>
-            }
+            <app-field-error [id]="nameErrorId" [message]="nameError()" />
           </div>
 
           <div>
@@ -69,7 +72,9 @@ import { errorCode, problemFieldErrors, problemMessage } from '../../../core/err
 })
 export class SettingsPage implements OnInit {
   private readonly api = inject(Api);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
+  protected readonly nameErrorId = fieldErrorId('settings', 'name');
   protected readonly form = inject(NonNullableFormBuilder).group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
   });
@@ -108,7 +113,11 @@ export class SettingsPage implements OnInit {
     this.saveError.set(null);
     this.nameServerError.set(null);
     this.saved.set(false);
-    if (this.form.invalid || this.saving()) return;
+    if (this.form.invalid) {
+      focusFirstInvalid(this.form, this.host);
+      return;
+    }
+    if (this.saving()) return;
 
     this.saving.set(true);
     try {

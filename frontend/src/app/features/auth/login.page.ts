@@ -1,16 +1,25 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Api } from '../../api/generated/api';
 import { login } from '../../api/generated/fn/auth/login';
-import { homeFor } from '../../core/auth/home';
 import { AuthStore } from '../../core/auth/auth.store';
+import { homeFor } from '../../core/auth/home';
 import { errorCode, problemMessage } from '../../core/errors/problem';
+import { FieldErrorComponent } from '../../shared/forms/field-error.component';
+import { fieldErrorId, focusFirstInvalid } from '../../shared/forms/form-a11y';
+
+type Field = 'email' | 'password';
+
+const MESSAGES: Record<Field, string> = {
+  email: 'Informe seu e-mail.',
+  password: 'Informe sua senha.',
+};
 
 @Component({
   selector: 'app-login-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, FieldErrorComponent],
   template: `
     <main class="auth">
       <div class="card stack">
@@ -33,11 +42,11 @@ import { errorCode, problemMessage } from '../../core/errors/problem';
               formControlName="email"
               autocomplete="email"
               inputmode="email"
+              aria-required="true"
               [attr.aria-invalid]="invalid('email')"
+              [attr.aria-describedby]="errorId('email')"
             />
-            @if (invalid('email')) {
-              <span class="error">Informe seu e-mail.</span>
-            }
+            <app-field-error [id]="errorId('email')" [message]="errorFor('email')" />
           </div>
 
           <div class="field">
@@ -47,11 +56,11 @@ import { errorCode, problemMessage } from '../../core/errors/problem';
               type="password"
               formControlName="password"
               autocomplete="current-password"
+              aria-required="true"
               [attr.aria-invalid]="invalid('password')"
+              [attr.aria-describedby]="errorId('password')"
             />
-            @if (invalid('password')) {
-              <span class="error">Informe sua senha.</span>
-            }
+            <app-field-error [id]="errorId('password')" [message]="errorFor('password')" />
           </div>
 
           <button class="btn btn-primary btn-block" type="submit" [disabled]="submitting()">
@@ -70,6 +79,7 @@ export class LoginPage {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     email: ['', [Validators.required, Validators.maxLength(254)]],
@@ -79,14 +89,26 @@ export class LoginPage {
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  protected invalid(name: 'email' | 'password'): boolean {
-    return this.submitted() && this.form.controls[name].invalid;
+  protected errorId(field: Field): string {
+    return fieldErrorId('login', field);
+  }
+
+  protected invalid(field: Field): boolean {
+    return this.submitted() && this.form.controls[field].invalid;
+  }
+
+  protected errorFor(field: Field): string | null {
+    return this.invalid(field) ? MESSAGES[field] : null;
   }
 
   protected async submit(): Promise<void> {
     this.submitted.set(true);
     this.error.set(null);
-    if (this.form.invalid || this.submitting()) return;
+    if (this.form.invalid) {
+      focusFirstInvalid(this.form, this.host);
+      return;
+    }
+    if (this.submitting()) return;
 
     this.submitting.set(true);
     try {

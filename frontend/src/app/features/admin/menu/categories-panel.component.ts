@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnInit,
   computed,
   inject,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Api } from '../../../api/generated/api';
 import { createCategory } from '../../../api/generated/fn/categories/create-category';
@@ -15,12 +17,15 @@ import { renameCategory } from '../../../api/generated/fn/categories/rename-cate
 import { reorderCategories } from '../../../api/generated/fn/categories/reorder-categories';
 import { Category } from '../../../api/generated/models/category';
 import { errorCode, problemMessage } from '../../../core/errors/problem';
+import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
+import { fieldErrorId } from '../../../shared/forms/form-a11y';
 import { byPosition, moved } from './reorder';
 
 /** Lists, creates, renames, reorders and deletes the menu categories. */
 @Component({
   selector: 'app-categories-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FieldErrorComponent],
   template: `
     <section class="card stack" aria-labelledby="categories-title">
       <h2 id="categories-title">Categorias</h2>
@@ -29,13 +34,14 @@ import { byPosition, moved } from './reorder';
         <p class="alert" role="alert">{{ error() }}</p>
       }
 
-      <form class="create" (submit)="$event.preventDefault(); create()">
+      <form class="create" novalidate (submit)="$event.preventDefault(); create()">
         <div class="field grow">
           <label for="new-category">Nova categoria</label>
           <input
             id="new-category"
             type="text"
             maxlength="60"
+            aria-required="true"
             placeholder="Ex.: Drinks"
             [value]="newName()"
             (input)="newName.set($any($event.target).value)"
@@ -54,20 +60,25 @@ import { byPosition, moved } from './reorder';
             @if (editingId() === category.id) {
               <div class="field grow">
                 <input
+                  #renameInput
                   type="text"
                   maxlength="60"
                   aria-label="Nome da categoria"
+                  aria-required="true"
+                  [attr.aria-invalid]="!!renameError()"
+                  [attr.aria-describedby]="renameErrorId"
                   [value]="editName()"
-                  (input)="editName.set($any($event.target).value)"
+                  (input)="editName.set($any($event.target).value); renameError.set(null)"
                   (keydown.enter)="saveRename(category)"
                   (keydown.escape)="editingId.set(null)"
                 />
+                <app-field-error [id]="renameErrorId" [message]="renameError()" />
               </div>
               <div class="actions">
                 <button
                   class="btn btn-sm btn-primary"
                   type="button"
-                  [disabled]="!editName().trim() || busy()"
+                  [disabled]="busy()"
                   (click)="saveRename(category)"
                 >
                   Salvar
@@ -143,6 +154,9 @@ export class CategoriesPanelComponent implements OnInit {
   protected readonly editName = signal('');
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly renameError = signal<string | null>(null);
+  protected readonly renameErrorId = fieldErrorId('category', 'rename');
+  private readonly renameInput = viewChild<ElementRef<HTMLInputElement>>('renameInput');
   protected readonly canCreate = computed(() => this.newName().trim().length > 0 && !this.busy());
 
   async ngOnInit(): Promise<void> {
@@ -164,12 +178,17 @@ export class CategoriesPanelComponent implements OnInit {
 
   protected startRename(category: Category): void {
     this.editName.set(category.name);
+    this.renameError.set(null);
     this.editingId.set(category.id);
   }
 
   protected async saveRename(category: Category): Promise<void> {
     const name = this.editName().trim();
-    if (!name) return;
+    if (!name) {
+      this.renameError.set('Informe o nome da categoria.');
+      this.renameInput()?.nativeElement.focus();
+      return;
+    }
     await this.run(async () => {
       const renamed = await this.api.invoke(renameCategory, { id: category.id, body: { name } });
       this.set(this.categories().map((c) => (c.id === category.id ? { ...c, ...renamed } : c)));

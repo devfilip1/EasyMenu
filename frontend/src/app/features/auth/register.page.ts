@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -7,6 +7,8 @@ import { registerOwner } from '../../api/generated/fn/auth/register-owner';
 import { AuthStore } from '../../core/auth/auth.store';
 import { homeFor } from '../../core/auth/home';
 import { errorCode, problemFieldErrors, problemMessage } from '../../core/errors/problem';
+import { FieldErrorComponent } from '../../shared/forms/field-error.component';
+import { fieldErrorId, focusFirstInvalid } from '../../shared/forms/form-a11y';
 import { SLUG_PATTERN, slugify } from './slug';
 
 type Field = 'establishmentName' | 'slug' | 'email' | 'password';
@@ -21,7 +23,7 @@ const CLIENT_MESSAGES: Record<Field, string> = {
 @Component({
   selector: 'app-register-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, FieldErrorComponent],
   template: `
     <main class="auth">
       <div class="card stack">
@@ -43,12 +45,15 @@ const CLIENT_MESSAGES: Record<Field, string> = {
               type="text"
               formControlName="establishmentName"
               autocomplete="organization"
+              aria-required="true"
               (input)="clearServerError('establishmentName')"
               [attr.aria-invalid]="!!errorFor('establishmentName')"
+              [attr.aria-describedby]="errorId('establishmentName')"
             />
-            @if (errorFor('establishmentName'); as message) {
-              <span class="error">{{ message }}</span>
-            }
+            <app-field-error
+              [id]="errorId('establishmentName')"
+              [message]="errorFor('establishmentName')"
+            />
           </div>
 
           <div class="field">
@@ -59,16 +64,15 @@ const CLIENT_MESSAGES: Record<Field, string> = {
               formControlName="slug"
               autocapitalize="none"
               spellcheck="false"
-              aria-describedby="reg-slug-hint"
+              aria-required="true"
               (input)="onSlugInput()"
               [attr.aria-invalid]="!!errorFor('slug')"
+              [attr.aria-describedby]="'reg-slug-hint ' + errorId('slug')"
             />
             <span class="hint" id="reg-slug-hint"
               >Seu cardápio ficará em /m/{{ slugPreview() }}</span
             >
-            @if (errorFor('slug'); as message) {
-              <span class="error">{{ message }}</span>
-            }
+            <app-field-error [id]="errorId('slug')" [message]="errorFor('slug')" />
           </div>
 
           <div class="field">
@@ -79,12 +83,12 @@ const CLIENT_MESSAGES: Record<Field, string> = {
               formControlName="email"
               autocomplete="email"
               inputmode="email"
+              aria-required="true"
               (input)="clearServerError('email')"
               [attr.aria-invalid]="!!errorFor('email')"
+              [attr.aria-describedby]="errorId('email')"
             />
-            @if (errorFor('email'); as message) {
-              <span class="error">{{ message }}</span>
-            }
+            <app-field-error [id]="errorId('email')" [message]="errorFor('email')" />
           </div>
 
           <div class="field">
@@ -94,12 +98,12 @@ const CLIENT_MESSAGES: Record<Field, string> = {
               type="password"
               formControlName="password"
               autocomplete="new-password"
+              aria-required="true"
               (input)="clearServerError('password')"
               [attr.aria-invalid]="!!errorFor('password')"
+              [attr.aria-describedby]="errorId('password')"
             />
-            @if (errorFor('password'); as message) {
-              <span class="error">{{ message }}</span>
-            }
+            <app-field-error [id]="errorId('password')" [message]="errorFor('password')" />
           </div>
 
           <button class="btn btn-primary btn-block" type="submit" [disabled]="submitting()">
@@ -116,6 +120,7 @@ export class RegisterPage {
   private readonly api = inject(Api);
   private readonly auth = inject(AuthStore);
   private readonly router = inject(Router);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
   protected readonly form = inject(NonNullableFormBuilder).group({
     establishmentName: [
@@ -147,6 +152,10 @@ export class RegisterPage {
       .subscribe((slug) => this.slugPreview.set(slug || 'seu-bar'));
   }
 
+  protected errorId(field: Field): string {
+    return fieldErrorId('reg', field);
+  }
+
   protected errorFor(field: Field): string | null {
     const server = this.serverErrors()[field];
     if (server) return server;
@@ -167,7 +176,11 @@ export class RegisterPage {
     this.submitted.set(true);
     this.error.set(null);
     this.serverErrors.set({});
-    if (this.form.invalid || this.submitting()) return;
+    if (this.form.invalid) {
+      focusFirstInvalid(this.form, this.host);
+      return;
+    }
+    if (this.submitting()) return;
 
     this.submitting.set(true);
     try {

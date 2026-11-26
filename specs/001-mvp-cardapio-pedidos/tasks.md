@@ -450,7 +450,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - 409 `slug_taken` e `email_taken` no cadastro, e 400 `validation_failed` com `errors.name` em settings, aparecem no erro do campo, dentro de um ancestral com `aria-live="polite"`;
   - erro geral de login (401) em `role="alert"`;
   - enviar com campos inválidos deixa `document.activeElement` no primeiro controle inválido.
-- [ ] T119 [US1] [IMPL-FRONT] Criar `frontend/src/app/shared/forms/{form-a11y.ts,field-error.component.ts}` e aplicar o padrão em `features/auth/{login,register}.page.ts`, `features/admin/settings/settings.page.ts` e `features/admin/menu/categories-panel.component.ts` (depende de: T032, T034, T036, T118). T118 verde.
+- [X] T119 [US1] [IMPL-FRONT] Criar `frontend/src/app/shared/forms/{form-a11y.ts,field-error.component.ts}` e aplicar o padrão em `features/auth/{login,register}.page.ts`, `features/admin/settings/settings.page.ts` e `features/admin/menu/categories-panel.component.ts` (depende de: T032, T034, T036, T118). T118 verde.
 - [ ] T120 [US1] [TEST-FRONT] Acessibilidade do form de item: ampliar `frontend/src/app/features/admin/menu/menu-item-form.component.spec.ts` com o mesmo padrão (depende de: T040, para não mexer no spec enquanto T040 está em implementação). Cobrir:
   - nome, preço, setor e categoria obrigatórios;
   - erro de promoção ligado ao campo de promoção;
