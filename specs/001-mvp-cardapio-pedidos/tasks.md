@@ -615,7 +615,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - criar `frontend/src/app/features/public-menu/menu-item-card.component.spec.ts` e ampliar `frontend/src/app/features/admin/menu/menu-items-list.component.spec.ts`;
   - item em promoção: o texto acessível contém "Preço original" junto ao valor riscado e "Preço promocional" junto ao valor efetivo, num elemento `.sr-only` (classe global já existente em `frontend/src/styles.scss`);
   - item sem promoção não exibe nenhum dos dois rótulos.
-- [ ] T131 [US2] [IMPL-FRONT] Adicionar `<span class="sr-only">Preço original</span>` e `<span class="sr-only">Preço promocional</span>` em `frontend/src/app/features/public-menu/menu-item-card.component.ts` e `frontend/src/app/features/admin/menu/menu-items-list.component.ts` (depende de: T130). T130 verde.
+- [X] T131 [US2] [IMPL-FRONT] Adicionar `<span class="sr-only">Preço original</span>` e `<span class="sr-only">Preço promocional</span>` em `frontend/src/app/features/public-menu/menu-item-card.component.ts` e `frontend/src/app/features/admin/menu/menu-items-list.component.ts` (depende de: T130). T130 verde.
 - [X] T132 [P] [US2] [TEST-FRONT] Ampliar `frontend/src/app/features/public-menu/cart.store.spec.ts` com `localStorage` adulterado antes de restaurar (depende de: T050):
   - quantidades `0` e `-3` viram 1;
   - `150` vira 99;

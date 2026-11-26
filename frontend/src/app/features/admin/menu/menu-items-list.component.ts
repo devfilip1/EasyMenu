@@ -46,8 +46,11 @@ import { byPosition, moved } from './reorder';
               <p class="muted description">{{ item.description }}</p>
             }
             <p class="price">
+              <!-- The sr-only labels carry their own spaces: whitespace between tags is dropped. -->
               @if (item.promotionalPriceCents != null) {
+                <span class="sr-only">Preço original </span>
                 <s class="muted">{{ item.priceCents | brl }}</s>
+                <span class="sr-only"> Preço promocional </span>
               }
               <strong>{{ item.effectivePriceCents | brl }}</strong>
             </p>
