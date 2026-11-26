@@ -325,7 +325,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - **isolamento**: todas as operações por id com token de B em item de A dão 404.
 
   Operações cobertas (o Dev Back remove o `x-pending` delas ao implementar): `GET/POST /api/menu-items`, `GET/PUT/DELETE /api/menu-items/{id}`, `PUT /api/menu-items/{id}/availability` e `PUT /api/categories/{id}/items/order`. Ampliar o `ApiDriver` com `CreateMenuItemAsync` e `CreateMenuAsync` (cardápio padrão: categorias Drinks e Porções; itens Caipirinha 2500/1990 bar, Chopp 1200 bar esgotado, Batata 3000 kitchen).
-- [ ] T026 [US1] [IMPL-BACK] Itens de ponta a ponta (depende de: T023, T024, T025). T024 e T025 verdes.
+- [X] T026 [US1] [IMPL-BACK] Itens de ponta a ponta (depende de: T023, T024, T025). T024 e T025 verdes.
   - `backend/src/EasyMenu.Domain/Menu/{MenuItem.cs,Station.cs}`;
   - `Configurations/MenuItemConfiguration.cs`;
   - migration `AddMenuItems`;

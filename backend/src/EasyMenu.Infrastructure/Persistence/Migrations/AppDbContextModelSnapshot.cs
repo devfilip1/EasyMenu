@@ -83,6 +83,70 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                     b.ToTable("categories", (string)null);
                 });
 
+            modelBuilder.Entity("EasyMenu.Domain.Menu.MenuItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("EstablishmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("establishment_id");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_available");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("PhotoPath")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("photo_path");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<long>("PriceCents")
+                        .HasColumnType("bigint")
+                        .HasColumnName("price_cents");
+
+                    b.Property<long?>("PromotionalPriceCents")
+                        .HasColumnType("bigint")
+                        .HasColumnName("promotional_price_cents");
+
+                    b.Property<string>("Station")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("station");
+
+                    b.HasKey("Id")
+                        .HasName("pk_menu_items");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_menu_items_category_id");
+
+                    b.HasIndex("EstablishmentId", "CategoryId", "Position")
+                        .HasDatabaseName("ix_menu_items_establishment_id_category_id_position");
+
+                    b.ToTable("menu_items", (string)null);
+                });
+
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -156,6 +220,23 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_categories_establishments_establishment_id");
+                });
+
+            modelBuilder.Entity("EasyMenu.Domain.Menu.MenuItem", b =>
+                {
+                    b.HasOne("EasyMenu.Domain.Menu.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_menu_items_categories_category_id");
+
+                    b.HasOne("EasyMenu.Domain.Establishments.Establishment", null)
+                        .WithMany()
+                        .HasForeignKey("EstablishmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_menu_items_establishments_establishment_id");
                 });
 
             modelBuilder.Entity("EasyMenu.Domain.Users.User", b =>

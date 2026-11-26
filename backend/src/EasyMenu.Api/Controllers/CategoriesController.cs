@@ -12,7 +12,7 @@ namespace EasyMenu.Api.Controllers;
 [Authorize(Policy = AuthPolicies.OwnerOnly)]
 [ProducesResponseType<ApiProblem>(StatusCodes.Status401Unauthorized, ApiProblem.MediaType)]
 [ProducesResponseType<ApiProblem>(StatusCodes.Status403Forbidden, ApiProblem.MediaType)]
-public sealed class CategoriesController(CategoryService categories) : ControllerBase
+public sealed class CategoriesController(CategoryService categories, MenuItemService items) : ControllerBase
 {
     [HttpGet(Name = "listCategories")]
     [ProducesResponseType<IReadOnlyList<CategoryResponse>>(StatusCodes.Status200OK)]
@@ -49,6 +49,16 @@ public sealed class CategoriesController(CategoryService categories) : Controlle
     public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
     {
         await categories.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/items/order", Name = "reorderCategoryItems")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ApiProblem>(StatusCodes.Status400BadRequest, ApiProblem.MediaType)]
+    [ProducesResponseType<ApiProblem>(StatusCodes.Status404NotFound, ApiProblem.MediaType)]
+    public async Task<IActionResult> ReorderItems(Guid id, ReorderRequest request, CancellationToken cancellationToken)
+    {
+        await items.ReorderAsync(id, request, cancellationToken);
         return NoContent();
     }
 }

@@ -14,5 +14,7 @@ public interface IAppDbContext
 
     DbSet<Category> Categories { get; }
 
+    DbSet<MenuItem> MenuItems { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

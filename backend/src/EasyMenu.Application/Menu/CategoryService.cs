@@ -8,6 +8,8 @@ namespace EasyMenu.Application.Menu;
 /// <summary>Owner's menu categories (FR-006, FR-011). Queries are tenant-filtered by the DbContext.</summary>
 public sealed class CategoryService(IAppDbContext db, ITenantContext tenant)
 {
+    public const string CategoryNotEmpty = "category_not_empty";
+
     public async Task<IReadOnlyList<CategoryResponse>> ListAsync(CancellationToken cancellationToken)
     {
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.Position).ToListAsync(cancellationToken);
@@ -45,6 +47,11 @@ public sealed class CategoryService(IAppDbContext db, ITenantContext tenant)
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var category = await FindAsync(id, cancellationToken);
+        if (await db.MenuItems.AnyAsync(i => i.CategoryId == id, cancellationToken))
+        {
+            throw new ConflictException(CategoryNotEmpty);
+        }
+
         db.Categories.Remove(category);
         await db.SaveChangesAsync(cancellationToken);
     }
@@ -52,9 +59,11 @@ public sealed class CategoryService(IAppDbContext db, ITenantContext tenant)
     private async Task<Category> FindAsync(Guid id, CancellationToken cancellationToken) =>
         await db.Categories.SingleOrDefaultAsync(c => c.Id == id, cancellationToken) ?? throw new NotFoundException();
 
-    // Items arrive with the menu items slice (T026).
-    private static Task<Dictionary<Guid, int>> CountItemsAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(new Dictionary<Guid, int>());
+    private Task<Dictionary<Guid, int>> CountItemsAsync(CancellationToken cancellationToken) =>
+        db.MenuItems
+            .GroupBy(i => i.CategoryId)
+            .Select(g => new { CategoryId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.CategoryId, x => x.Count, cancellationToken);
 
     private static CategoryResponse ToResponse(Category category, int itemCount) => new()
     {

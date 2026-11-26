@@ -256,7 +256,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     put:
-      x-pending: true
       tags: [Categories]
       operationId: reorderCategoryItems
       summary: Define a ordem dos itens da categoria (FR-011); precisa conter todos os ids de itens da categoria.
@@ -275,7 +274,6 @@ paths:
   # ---------------------------------------------------------------- Menu items (Owner)
   /api/menu-items:
     get:
-      x-pending: true
       tags: [MenuItems]
       operationId: listMenuItems
       summary: Itens do estabelecimento ordenados por categoria e posição (inclui esgotados).
@@ -295,7 +293,6 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
     post:
-      x-pending: true
       tags: [MenuItems]
       operationId: createMenuItem
       summary: Cria item no fim da categoria (a foto é enviada depois, em /photo).
@@ -323,7 +320,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     get:
-      x-pending: true
       tags: [MenuItems]
       operationId: getMenuItem
       responses:
@@ -336,7 +332,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
     put:
-      x-pending: true
       tags: [MenuItems]
       operationId: updateMenuItem
       summary: Atualiza todos os campos; mudar a categoria move o item para o fim da nova categoria.
@@ -356,7 +351,6 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
-      x-pending: true
       tags: [MenuItems]
       operationId: deleteMenuItem
       summary: Remove o item (e a foto); pedidos existentes não mudam.
@@ -370,7 +364,6 @@ paths:
     parameters:
       - $ref: "#/components/parameters/Id"
     put:
-      x-pending: true
       tags: [MenuItems]
       operationId: setMenuItemAvailability
       summary: Alterna ativo/esgotado (FR-010).

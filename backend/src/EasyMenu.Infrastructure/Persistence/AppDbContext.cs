@@ -20,6 +20,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ITenant
 
     public DbSet<Category> Categories => Set<Category>();
 
+    public DbSet<MenuItem> MenuItems => Set<MenuItem>();
+
     /// <summary>Read by the tenant query filter on every query (null = anonymous: tenant data is hidden).</summary>
     private Guid? CurrentEstablishmentId => tenant.EstablishmentId;
 
