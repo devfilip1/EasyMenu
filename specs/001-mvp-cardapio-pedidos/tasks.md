@@ -499,7 +499,7 @@ código e conferir o total calculado pelo servidor (E2E T057).
   - `backend/src/EasyMenu.Application/Orders/{CheckoutService.cs,RandomPickupCodeGenerator.cs,OrderMappings.cs}` (o retry de até 5 tentativas captura `UniqueConstraintViolationException` de `ix_orders_establishment_id_pickup_code` ou `ix_orders_public_token`, research R17; os índices recebem esses nomes via `HasDatabaseName`);
   - `backend/src/EasyMenu.Infrastructure/Payments/FakePaymentGateway.cs`;
   - `backend/src/EasyMenu.Api/Controllers/PublicOrdersController.cs` (`[AllowAnonymous]`).
-- [ ] T098 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/CheckoutRateLimitTests.cs` (depende de: T047, T094), com `WithRateLimits(2)`:
+- [X] T098 [US2] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/RateLimiting/CheckoutRateLimitTests.cs` (depende de: T047, T094), com `WithRateLimits(2)`:
   - a 3ª chamada de `POST /api/public/establishments/{slug}/orders` na janela dá 429 `rate_limited` com `Retry-After`, mesmo quando as anteriores foram 400 (`empty_cart`);
   - `GET /api/public/establishments/{slug}/menu` não é limitado.
 - [ ] T099 [US2] [IMPL-BACK] `[EnableRateLimiting("checkout")]` e `ProducesResponseType` 429 em `PublicOrdersController.PlaceOrder` (depende de: T049, T095, T098). T098 e `OpenApiContractTests` verdes.
