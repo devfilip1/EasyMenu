@@ -130,3 +130,17 @@ export async function placeOrder(
   );
   return json<PublicOrder>(response, 'placeOrder');
 }
+
+/** PUT /api/menu-items/{id}/availability as the given owner (e.g. sell out an item mid-test). */
+export async function setItemAvailability(
+  request: APIRequestContext,
+  session: Pick<AuthResponse, 'accessToken'>,
+  menuItemId: string,
+  isAvailable: boolean,
+): Promise<MenuItem> {
+  const response = await request.put(
+    `${API_URL}/api/menu-items/${encodeURIComponent(menuItemId)}/availability`,
+    { headers: bearer(session), data: { isAvailable } },
+  );
+  return json<MenuItem>(response, 'setItemAvailability');
+}
