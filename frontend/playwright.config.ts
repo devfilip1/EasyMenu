@@ -19,7 +19,11 @@ const PROD_HEADERS_SPEC = /security-headers\.spec\.ts/;
 const webServers: NonNullable<PlaywrightTestConfig['webServer']> = [
   {
     name: 'api',
-    command: 'dotnet run --project ../backend/src/EasyMenu.Api --launch-profile http',
+    // In prod-headers mode the nginx container reaches the API through host.docker.internal
+    // (research R18), so the API must listen on all interfaces, not only on localhost.
+    command:
+      'dotnet run --project ../backend/src/EasyMenu.Api --launch-profile http' +
+      (runProdHeaders ? ` -- --urls http://0.0.0.0:${new URL(apiURL).port || '5080'}` : ''),
     // /health only answers 200 once the database is reachable (503 otherwise).
     url: `${apiURL}/health`,
     reuseExistingServer: !isCI,

@@ -1,13 +1,17 @@
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 import type {
   AuthResponse,
   Category,
+  KitchenOrder,
   MenuItem,
   MenuItemRequest,
   PlaceOrderLine,
   PublicOrder,
   RegisterOwnerRequest,
+  Station,
 } from '../../src/app/api/generated/models';
 
 /**
@@ -143,4 +147,59 @@ export async function setItemAvailability(
     { headers: bearer(session), data: { isAvailable } },
   );
   return json<MenuItem>(response, 'setItemAvailability');
+}
+
+/** PUT /api/menu-items/{id}/photo (multipart `file`) as the given owner. */
+export async function uploadItemPhoto(
+  request: APIRequestContext,
+  session: Pick<AuthResponse, 'accessToken'>,
+  menuItemId: string,
+  filePath: string,
+  mimeType = 'image/jpeg',
+): Promise<MenuItem> {
+  const response = await request.put(
+    `${API_URL}/api/menu-items/${encodeURIComponent(menuItemId)}/photo`,
+    {
+      headers: bearer(session),
+      multipart: {
+        file: { name: path.basename(filePath), mimeType, buffer: await readFile(filePath) },
+      },
+    },
+  );
+  return json<MenuItem>(response, 'uploadItemPhoto');
+}
+
+/** GET /api/kitchen/orders (owner or kitchen). */
+export async function listKitchenOrders(
+  request: APIRequestContext,
+  session: Pick<AuthResponse, 'accessToken'>,
+): Promise<KitchenOrder[]> {
+  const response = await request.get(`${API_URL}/api/kitchen/orders`, { headers: bearer(session) });
+  return json<KitchenOrder[]>(response, 'listKitchenOrders');
+}
+
+/** The kitchen view (with its id) of an order placed by a guest, found by pickup code. */
+export async function kitchenOrderByPickupCode(
+  request: APIRequestContext,
+  session: Pick<AuthResponse, 'accessToken'>,
+  pickupCode: string,
+): Promise<KitchenOrder> {
+  const order = (await listKitchenOrders(request, session)).find((o) => o.pickupCode === pickupCode);
+  if (!order) throw new Error(`E2E setup failed: no kitchen order with pickup code ${pickupCode}`);
+  return order;
+}
+
+/** PUT /api/kitchen/orders/{orderId}/parts/{station}/status. */
+export async function updatePartStatus(
+  request: APIRequestContext,
+  session: Pick<AuthResponse, 'accessToken'>,
+  orderId: string,
+  station: Station,
+  status: 'in_preparation' | 'ready',
+): Promise<KitchenOrder> {
+  const response = await request.put(
+    `${API_URL}/api/kitchen/orders/${encodeURIComponent(orderId)}/parts/${station}/status`,
+    { headers: bearer(session), data: { status } },
+  );
+  return json<KitchenOrder>(response, 'updatePartStatus');
 }

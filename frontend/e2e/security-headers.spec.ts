@@ -1,11 +1,25 @@
-import { expect, test, type Page } from '@playwright/test';
-import { API_URL, uniqueSlug } from './support/api';
+import path from 'node:path';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import type { PublicMenu } from '../src/app/api/generated/models';
+import {
+  createCategory,
+  createItem,
+  kitchenOrderByPickupCode,
+  placeOrder,
+  registerOwner,
+  uniqueSlug,
+  updatePartStatus,
+  uploadItemPhoto,
+  type OwnerSession,
+} from './support/api';
 
 /**
- * Security headers of the production image (research R15, T104). Runs only in the `prod-headers`
- * project, against the nginx container (E2E_PROD_URL), never against `ng serve`.
+ * Security headers of the production image (research R15, T104) and same-origin deploy through
+ * the nginx reverse proxy (research R18, T116). Runs only in the `prod-headers` project, against
+ * the nginx container (E2E_PROD_URL), never against `ng serve`. Test data is seeded straight on
+ * the API (E2E_API_URL); the browser and `request` (baseURL = E2E_PROD_URL) only use the proxy.
  */
-const API_ORIGIN = new URL(API_URL).origin;
+const PHOTO = path.join(__dirname, 'fixtures', 'item.jpg');
 
 const PAGES = [
   { name: 'root', path: '/' },
@@ -74,7 +88,9 @@ for (const { name, path } of PAGES) {
 
       expect(csp.get('object-src')).toEqual(["'none'"]);
       expect(csp.get('frame-ancestors')).toEqual(["'none'"]);
-      expect(csp.get('connect-src')).toContain(API_ORIGIN);
+      // Same origin (R18): the API, hubs and media are proxied, so no external origin is allowed.
+      expect([...(csp.get('connect-src') ?? [])].sort()).toEqual(["'self'"]);
+      expect([...(csp.get('img-src') ?? [])].sort()).toEqual(["'self'", 'data:'].sort());
     });
 
     test('sends the hardening headers', async ({ page }) => {
@@ -105,3 +121,78 @@ for (const { name, path } of PAGES) {
     });
   });
 }
+
+interface SeededShop {
+  owner: OwnerSession;
+  slug: string;
+  caipirinhaId: string;
+}
+
+/** Owner + "Drinks" + Caipirinha with photo, straight on the API. */
+async function seedShop(request: APIRequestContext): Promise<SeededShop> {
+  const owner = await registerOwner(request, { establishmentName: 'Bar Proxy', slug: uniqueSlug('proxy') });
+  const drinks = await createCategory(request, owner, 'Drinks');
+  const caipirinha = await createItem(request, owner, {
+    categoryId: drinks.id,
+    name: 'Caipirinha',
+    priceCents: 2500,
+    station: 'bar',
+  });
+  await uploadItemPhoto(request, owner, caipirinha.id, PHOTO);
+  return { owner, slug: owner.slug, caipirinhaId: caipirinha.id };
+}
+
+test.describe('same-origin API through the nginx proxy (R18)', () => {
+  test('proxies /api/ to the API', async ({ request, baseURL }) => {
+    const shop = await seedShop(request);
+
+    // Relative URL: resolved against E2E_PROD_URL, i.e. through nginx.
+    const response = await request.get(`/api/public/establishments/${shop.slug}/menu`);
+
+    expect(new URL(response.url()).origin).toBe(new URL(baseURL!).origin);
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('application/json');
+    const menu = (await response.json()) as PublicMenu;
+    expect(menu.establishment.slug).toBe(shop.slug);
+  });
+
+  test('/m/{slug} renders the menu with the photo served from /media/', async ({ page, request }) => {
+    const shop = await seedShop(request);
+    const report = await recordCsp(page);
+
+    await page.goto(`/m/${shop.slug}`);
+
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Bar Proxy');
+    const card = page.getByTestId('menu-item-card').filter({ hasText: 'Caipirinha' });
+    const photo = card.locator('img');
+    await expect(photo).toHaveAttribute('src', /^\/media\//);
+    await expect
+      .poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth), {
+        message: 'photo loaded through the proxy',
+      })
+      .toBeGreaterThan(0);
+
+    const { violations, consoleErrors } = await report();
+    expect(violations, 'securitypolicyviolation events').toEqual([]);
+    expect(consoleErrors, 'CSP console errors').toEqual([]);
+  });
+
+  test('/pedido/{token} updates live through the /hubs WebSocket proxy', async ({ page, request }) => {
+    const shop = await seedShop(request);
+    const order = await placeOrder(request, shop.slug, [{ menuItemId: shop.caipirinhaId, quantity: 1 }]);
+    const report = await recordCsp(page);
+
+    await page.goto(`/pedido/${order.publicToken}`);
+    await expect(page.getByTestId('order-status')).toContainText('Pago / aguardando preparo');
+
+    const kitchenOrder = await kitchenOrderByPickupCode(request, shop.owner, order.pickupCode);
+    await updatePartStatus(request, shop.owner, kitchenOrder.id, 'bar', 'in_preparation');
+
+    // No reload: only the realtime hub (WebSocket via nginx) can bring this in.
+    await expect(page.getByTestId('order-status')).toContainText('Em preparo', { timeout: 5_000 });
+
+    const { violations, consoleErrors } = await report();
+    expect(violations, 'securitypolicyviolation events').toEqual([]);
+    expect(consoleErrors, 'CSP console errors').toEqual([]);
+  });
+});

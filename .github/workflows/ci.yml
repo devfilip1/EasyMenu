@@ -154,8 +154,8 @@ jobs:
       CI: true
       # Selects the `prod-headers` Playwright project and skips `ng serve` (see playwright.config.ts).
       E2E_PROD_URL: http://localhost:8080
-      # The API (started by Playwright's webServer) must accept the production origin.
-      Cors__AllowedOrigins__0: http://localhost:8080
+      # Same origin (research R18): the browser only talks to nginx, which proxies /api/, /hubs/
+      # and /media/ to the API on the host, so no CORS origin is configured for 8080.
     steps:
       - uses: actions/checkout@v4
 
@@ -177,12 +177,13 @@ jobs:
         # The API client is generated inside the image from the contract (named build context).
         run: docker build --build-context contracts=../contracts -t easymenu-web .
 
-      # nginx listens on port 80 inside the container.
+      # nginx listens on port 80 inside the container and proxies to the API started on the host
+      # by Playwright's webServer (bound to 0.0.0.0:5080 in prod-headers mode).
       - name: Run production image
         run: >-
           docker run -d --name easymenu-web -p 8080:80
-          -e API_ORIGIN=http://localhost:5080
-          -e API_WS_ORIGIN=ws://localhost:5080
+          --add-host=host.docker.internal:host-gateway
+          -e API_UPSTREAM=http://host.docker.internal:5080
           easymenu-web
 
       - name: Install
