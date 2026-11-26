@@ -750,7 +750,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ### Fatia 5a: Equipe REST (back), que pode começar logo após a Foundational
 
-- [ ] T079 [P] [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Staff/StaffEndpointsTests.cs` (depende de: T006):
+- [X] T079 [P] [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Staff/StaffEndpointsTests.cs` (depende de: T006):
   - `POST /api/staff` dá 201 e o login com as credenciais dá 200 com `role=kitchen`;
   - e-mail já usado por qualquer conta, inclusive o Dono e em outra caixa, dá 409 `email_taken`;
   - dois `POST /api/staff` simultâneos com o mesmo e-mail dão um 201 e um 409 `email_taken`, nunca 500 (R17);
