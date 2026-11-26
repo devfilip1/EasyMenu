@@ -208,14 +208,18 @@ export async function updatePartStatus(
 export const AUTH_STORAGE_KEY = 'easymenu.session';
 
 /**
- * Signs the page in without the login form: stores the session in localStorage before any
+ * Signs the page in without the login form: stores the session in localStorage before the first
  * navigation, exactly as AuthStore.setSession would. Call it before the first `page.goto`.
+ * The session is written once per tab, so a logout followed by a reload stays logged out.
  */
 export async function loginAs(page: Page, session: AuthResponse): Promise<void> {
   const stored = { accessToken: session.accessToken, expiresAt: session.expiresAt, user: session.user };
   await page.addInitScript(
     ([key, value]) => {
+      const done = '__e2eLoginAs';
+      if (window.sessionStorage.getItem(done)) return;
       window.localStorage.setItem(key, value);
+      window.sessionStorage.setItem(done, '1');
     },
     [AUTH_STORAGE_KEY, JSON.stringify(stored)] as const,
   );
