@@ -15,6 +15,9 @@ namespace EasyMenu.IntegrationTests.Contract;
 /// <item>Matching operations MUST agree on parameters, request body and response status codes, and on the schemas
 /// of every media type declared in the contract (after resolving <c>$ref</c>): properties, type, format,
 /// required, nullable, enum, items and additionalProperties.</item>
+/// <item><c>allOf</c> members are merged into one flat schema on both sides before comparing (properties and
+/// required are unioned; a property declared differently by two members, or any other clash, is a divergence),
+/// so a contract using composition matches the flat object ASP.NET Core emits for derived types.</item>
 /// </list>
 /// Extra media types emitted by MVC formatters (text/plain, text/json, ...) are ignored; only media types declared
 /// in the contract are compared. Nullability is normalized across OpenAPI 3.0 (<c>nullable: true</c>) and 3.1
@@ -259,6 +262,16 @@ public static class OpenApiContractComparer
                 return;
             }
 
+            foreach (var conflict in c.Conflicts)
+            {
+                Report(location, $"allOf conflict in the contract — {conflict}");
+            }
+
+            foreach (var conflict in g.Conflicts)
+            {
+                Report(location, $"allOf conflict in the API — {conflict}");
+            }
+
             if (!c.Types.SetEquals(g.Types))
             {
                 Report(location, $"type differs — contract {c.TypeText}, API {g.TypeText}.");
@@ -306,7 +319,6 @@ public static class OpenApiContractComparer
             CompareAdditionalProperties(location, c.AdditionalProperties, g.AdditionalProperties);
             CompareComposition(location, "oneOf", c.OneOf, g.OneOf);
             CompareComposition(location, "anyOf", c.AnyOf, g.AnyOf);
-            CompareComposition(location, "allOf", c.AllOf, g.AllOf);
         }
 
         private void CompareAdditionalProperties(string location, JsonNode? contract, JsonNode? generated)
@@ -351,25 +363,28 @@ public static class OpenApiContractComparer
             node is JsonObject obj && obj["$ref"] is JsonValue v ? v.GetValue<string>() : null;
     }
 
-    /// <summary>A schema with $ref resolved and nullability folded into <see cref="Nullable"/>.</summary>
+    /// <summary>
+    /// A schema with $ref resolved, allOf members merged into a flat schema and nullability folded into
+    /// <see cref="Nullable"/>. Clashes found while merging allOf are kept in <see cref="Conflicts"/>.
+    /// </summary>
     private sealed class Schema
     {
         public bool IsEmpty { get; private init; }
         public SortedSet<string> Types { get; } = new(StringComparer.Ordinal);
         public bool Nullable { get; private set; }
-        public string? Format { get; private init; }
+        public string? Format { get; private set; }
         public HashSet<string> Enum { get; } = new(StringComparer.Ordinal);
         public HashSet<string> Required { get; } = new(StringComparer.Ordinal);
         public Dictionary<string, JsonNode?> Properties { get; } = new(StringComparer.Ordinal);
-        public JsonNode? Items { get; private init; }
-        public JsonNode? AdditionalProperties { get; private init; }
+        public JsonNode? Items { get; private set; }
+        public JsonNode? AdditionalProperties { get; private set; }
         public JsonArray? OneOf { get; private set; }
         public JsonArray? AnyOf { get; private set; }
-        public JsonArray? AllOf { get; private init; }
+        public List<string> Conflicts { get; } = [];
 
         public string TypeText => Types.Count == 0 ? "(none)" : string.Join("|", Types);
 
-        public static Schema Normalize(JsonObject document, JsonNode? node)
+        public static Schema Normalize(JsonObject document, JsonNode? node, int depth = 0)
         {
             var obj = ResolveChain(document, node);
             if (obj is null)
@@ -382,20 +397,119 @@ public static class OpenApiContractComparer
             {
                 if (obj[keyword] is JsonArray members && members.Count == 2 && members.Count(IsNullSchema) == 1)
                 {
-                    var inner = Normalize(document, members.First(m => !IsNullSchema(m)));
+                    var inner = Normalize(document, members.First(m => !IsNullSchema(m)), depth + 1);
                     inner.Nullable = true;
                     return inner;
                 }
             }
 
-            // A lone allOf member is just a wrapper (used by some generators to attach siblings to a $ref).
-            if (obj["allOf"] is JsonArray single && single.Count == 1 && obj["type"] is null && obj["properties"] is null)
+            var schema = NormalizeOwn(obj);
+
+            // allOf: merge every member (and the schema's own keywords) into one flat schema, so a contract
+            // using composition matches the flat object ASP.NET Core emits for derived types (and vice versa).
+            if (obj["allOf"] is JsonArray allOf && allOf.Count > 0)
             {
-                var inner = Normalize(document, single[0]);
-                inner.Nullable |= IsTrue(obj["nullable"]);
-                return inner;
+                if (depth > MaxDepth)
+                {
+                    throw new InvalidOperationException("allOf nesting too deep (cycle?).");
+                }
+
+                var members = allOf.Select(m => Normalize(document, m, depth + 1)).ToList();
+                for (var i = 0; i < members.Count; i++)
+                {
+                    schema.MergeFrom(members[i], $"allOf[{i}]");
+                }
+
+                // Sibling 'nullable' (common generator wrapper) or every member nullable.
+                schema.Nullable = IsTrue(obj["nullable"]) || HasNullType(obj) || members.All(m => m.Nullable);
             }
 
+            return schema;
+        }
+
+        private const int MaxDepth = 32;
+
+        private static bool HasNullType(JsonObject obj) =>
+            obj["type"] is JsonArray types && types.Any(t => t is JsonValue v && v.GetValue<string>() == "null");
+
+        /// <summary>Merges an allOf member: properties/required are unioned; any other clash is a conflict.</summary>
+        private void MergeFrom(Schema member, string source)
+        {
+            Conflicts.AddRange(member.Conflicts);
+
+            if (member.Types.Count > 0)
+            {
+                if (Types.Count == 0)
+                {
+                    Types.UnionWith(member.Types);
+                }
+                else if (!Types.SetEquals(member.Types))
+                {
+                    Conflicts.Add($"{source} has type {member.TypeText} but another member has {TypeText}.");
+                }
+            }
+
+            Format = MergeValue(Format, member.Format, "format", source);
+
+            if (member.Enum.Count > 0)
+            {
+                if (Enum.Count == 0)
+                {
+                    Enum.UnionWith(member.Enum);
+                }
+                else if (!Enum.SetEquals(member.Enum))
+                {
+                    Conflicts.Add($"{source} has enum [{Join(member.Enum)}] but another member has [{Join(Enum)}].");
+                }
+            }
+
+            Required.UnionWith(member.Required);
+
+            foreach (var (name, value) in member.Properties)
+            {
+                if (Properties.TryGetValue(name, out var existing) && !SameJson(existing, value))
+                {
+                    Conflicts.Add($"property '{name}' is declared differently by {source} and another member.");
+                    continue;
+                }
+
+                Properties[name] = value;
+            }
+
+            Items = MergeNode(Items, member.Items, "items", source);
+            AdditionalProperties = MergeNode(AdditionalProperties, member.AdditionalProperties, "additionalProperties", source);
+            OneOf = (JsonArray?)MergeNode(OneOf, member.OneOf, "oneOf", source);
+            AnyOf = (JsonArray?)MergeNode(AnyOf, member.AnyOf, "anyOf", source);
+        }
+
+        private string? MergeValue(string? current, string? incoming, string keyword, string source)
+        {
+            if (incoming is not null && current is not null && current != incoming)
+            {
+                Conflicts.Add($"{source} has {keyword} {incoming} but another member has {current}.");
+                return current;
+            }
+
+            return current ?? incoming;
+        }
+
+        private JsonNode? MergeNode(JsonNode? current, JsonNode? incoming, string keyword, string source)
+        {
+            if (incoming is not null && current is not null && !SameJson(current, incoming))
+            {
+                Conflicts.Add($"{source} declares a different {keyword} than another member.");
+                return current;
+            }
+
+            return current ?? incoming;
+        }
+
+        private static bool SameJson(JsonNode? a, JsonNode? b) =>
+            (a?.ToJsonString() ?? "null") == (b?.ToJsonString() ?? "null");
+
+        /// <summary>The schema's own keywords, ignoring allOf.</summary>
+        private static Schema NormalizeOwn(JsonObject obj)
+        {
             var schema = new Schema
             {
                 Format = obj["format"]?.GetValue<string>(),
@@ -403,7 +517,6 @@ public static class OpenApiContractComparer
                 AdditionalProperties = obj["additionalProperties"],
                 OneOf = obj["oneOf"] as JsonArray,
                 AnyOf = obj["anyOf"] as JsonArray,
-                AllOf = obj["allOf"] as JsonArray,
                 Nullable = IsTrue(obj["nullable"]),
             };
 

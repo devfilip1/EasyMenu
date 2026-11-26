@@ -336,6 +336,149 @@ public sealed class OpenApiContractComparerTests
         Compare().Should().ContainSingle().Which.Should().Contain("remova x-pending de GET /orders");
     }
 
+    // ------------------------------------------------------------------ allOf
+
+    private const string AllOfContractYaml =
+        """
+        openapi: 3.1.0
+        info: { title: Sample, version: 1.0.0 }
+        paths:
+          /orders/{id}:
+            get:
+              responses:
+                "200":
+                  description: OK
+                  content:
+                    application/json:
+                      schema: { $ref: "#/components/schemas/OrderDetailLine" }
+        components:
+          schemas:
+            OrderLine:
+              type: object
+              required: [name, quantity]
+              properties:
+                name: { type: string }
+                quantity: { type: integer, format: int32 }
+                unitPriceCents: { type: integer, format: int64 }
+            OrderDetailLine:
+              allOf:
+                - $ref: "#/components/schemas/OrderLine"
+                - type: object
+                  required: [station]
+                  properties:
+                    station: { type: string, enum: [kitchen, bar] }
+        """;
+
+    private const string FlatGeneratedJson =
+        """
+        {
+          "paths": {
+            "/orders/{id}": {
+              "get": {
+                "responses": {
+                  "200": {
+                    "description": "OK",
+                    "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OrderDetailLine" } } }
+                  }
+                }
+              }
+            }
+          },
+          "components": {
+            "schemas": {
+              "OrderDetailLine": {
+                "type": "object",
+                "required": ["station", "name", "quantity"],
+                "properties": {
+                  "station": { "type": "string", "enum": ["bar", "kitchen"] },
+                  "name": { "type": "string" },
+                  "quantity": { "type": "integer", "format": "int32" },
+                  "unitPriceCents": { "type": "integer", "format": "int64" }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+    private static (JsonObject Contract, JsonObject Generated) AllOfDocuments() =>
+        (OpenApiDocuments.ParseYaml(AllOfContractYaml), OpenApiDocuments.ParseJson(FlatGeneratedJson));
+
+    private static JsonObject FlatLine(JsonObject generated) =>
+        (JsonObject)generated["components"]!["schemas"]!["OrderDetailLine"]!;
+
+    [Fact]
+    public void Contract_allOf_matches_the_equivalent_flat_object_of_the_api()
+    {
+        var (contract, generated) = AllOfDocuments();
+
+        OpenApiContractComparer.Compare(contract, generated).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Api_allOf_matches_the_equivalent_flat_object_of_the_contract()
+    {
+        // Same documents with the roles swapped: merging happens on both sides.
+        var (contract, generated) = AllOfDocuments();
+
+        OpenApiContractComparer.Compare(generated, contract).Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Field_of_an_allOf_base_member_missing_in_the_api_is_a_divergence()
+    {
+        var (contract, generated) = AllOfDocuments();
+        ((JsonObject)FlatLine(generated)["properties"]!).Remove("unitPriceCents");
+
+        OpenApiContractComparer.Compare(contract, generated).Should().ContainSingle().Which.Should()
+            .Be("GET /orders/{id} → response 200 application/json.unitPriceCents: property declared in the contract but missing in the API.");
+    }
+
+    [Fact]
+    public void Field_of_an_allOf_extension_member_missing_in_the_api_is_a_divergence()
+    {
+        var (contract, generated) = AllOfDocuments();
+        ((JsonObject)FlatLine(generated)["properties"]!).Remove("station");
+        FlatLine(generated)["required"] = new JsonArray("name", "quantity");
+
+        var divergences = OpenApiContractComparer.Compare(contract, generated);
+
+        divergences.Should().HaveCount(2);
+        divergences.Should().Contain(d => d.Contains(".station: property declared in the contract but missing in the API"));
+        divergences.Should().Contain(d => d.Contains("required differs") && d.Contains("missing in API: [station]"));
+    }
+
+    [Fact]
+    public void Required_of_every_allOf_member_is_unioned()
+    {
+        var (contract, generated) = AllOfDocuments();
+        FlatLine(generated)["required"] = new JsonArray("station");
+
+        OpenApiContractComparer.Compare(contract, generated).Should().ContainSingle().Which.Should()
+            .Contain("required differs").And.Contain("missing in API: [name, quantity]");
+    }
+
+    [Fact]
+    public void Type_divergence_inside_an_allOf_member_is_reported()
+    {
+        var (contract, generated) = AllOfDocuments();
+        ((JsonObject)FlatLine(generated)["properties"]!["quantity"]!)["type"] = "number";
+
+        OpenApiContractComparer.Compare(contract, generated).Should().ContainSingle().Which.Should()
+            .Contain(".quantity: type differs — contract integer, API number");
+    }
+
+    [Fact]
+    public void Property_declared_differently_by_two_allOf_members_is_a_conflict()
+    {
+        var (contract, generated) = AllOfDocuments();
+        var extension = (JsonObject)contract["components"]!["schemas"]!["OrderDetailLine"]!["allOf"]![1]!;
+        extension["properties"]!["quantity"] = JsonNode.Parse("""{ "type": "string" }""");
+
+        OpenApiContractComparer.Compare(contract, generated).Should().ContainSingle().Which.Should()
+            .Contain("allOf conflict in the contract").And.Contain("property 'quantity'");
+    }
+
     [Fact]
     public void All_divergences_are_listed_not_only_the_first()
     {
