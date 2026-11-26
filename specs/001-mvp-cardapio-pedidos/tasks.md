@@ -774,7 +774,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ### Fatia 5c: Pedidos admin (back)
 
-- [ ] T083 [P] [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Orders/OrdersEndpointsTests.cs` (depende de: T047):
+- [X] T083 [P] [US5] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Orders/OrdersEndpointsTests.cs` (depende de: T047):
   - `GET /api/orders` ordena do mais recente ao mais antigo (usar `FakeTimeProvider` para espaçar os pedidos);
   - `?status=picked_up` filtra;
   - paginação (`page`, `pageSize`, `totalCount`);
