@@ -2,6 +2,9 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorCode } from '../../api/generated/models/error-code';
 import { ERROR_CODE } from '../../api/generated/models/error-code-array';
 
+/** Shared by the API's own size check (image_too_large) and the server limit (payload_too_large). */
+const TOO_LARGE_MESSAGE = 'Arquivo grande demais (máx. 5 MB).';
+
 const MESSAGES: Record<ErrorCode, string> = {
   validation_failed: 'Confira os campos destacados e tente novamente.',
   invalid_credentials: 'E-mail ou senha inválidos.',
@@ -16,7 +19,7 @@ const MESSAGES: Record<ErrorCode, string> = {
   invalid_price: 'Informe um preço maior que zero.',
   invalid_promotional_price: 'O preço promocional deve ser maior que zero e menor que o preço.',
   invalid_image_type: 'Formato de imagem não suportado. Envie JPG, PNG ou WebP.',
-  image_too_large: 'A imagem é grande demais. Envie uma foto de até 5 MB.',
+  image_too_large: TOO_LARGE_MESSAGE,
   establishment_not_found: 'Estabelecimento não encontrado.',
   empty_cart: 'Seu carrinho está vazio.',
   invalid_quantity: 'Quantidade inválida.',
@@ -27,8 +30,8 @@ const MESSAGES: Record<ErrorCode, string> = {
   order_not_ready: 'O pedido ainda não está pronto para retirada.',
   unauthorized: 'Sua sessão expirou. Entre novamente.',
   forbidden: 'Você não tem permissão para esta ação.',
-  rate_limited: 'Muitas tentativas seguidas. Aguarde um pouco e tente novamente.',
-  payload_too_large: 'O envio excedeu o tamanho máximo permitido.',
+  rate_limited: 'Muitas tentativas. Aguarde um instante e tente novamente.',
+  payload_too_large: TOO_LARGE_MESSAGE,
 };
 
 const GENERIC_MESSAGE = 'Algo deu errado. Tente novamente em instantes.';

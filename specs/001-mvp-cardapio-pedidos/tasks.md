@@ -851,7 +851,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
     - `rate_limited` → "Muitas tentativas. Aguarde um instante e tente novamente.";
     - `payload_too_large` e `image_too_large` → "Arquivo grande demais (máx. 5 MB).";
   - ampliar `login.page.spec.ts`, `register.page.spec.ts` e `cart-sheet.component.spec.ts`: resposta 429 mostra essa mensagem e reabilita o botão.
-- [ ] T103 [IMPL-FRONT] Tratar 429 em `frontend/src/app/core/errors/problem.ts`, `features/auth/{login,register}.page.ts` e `features/public-menu/cart-sheet.component.ts` (depende de: T018, T032, T055, T102). T102 verde.
+- [X] T103 [IMPL-FRONT] Tratar 429 em `frontend/src/app/core/errors/problem.ts`, `features/auth/{login,register}.page.ts` e `features/public-menu/cart-sheet.component.ts` (depende de: T018, T032, T055, T102). T102 verde.
 - [X] T104 [P] [TEST-FRONT] Headers de segurança do deploy (depende de: T017).
   - `frontend/e2e/security-headers.spec.ts`, no projeto Playwright `prod-headers` (só roda com `E2E_PROD_URL`, padrão `http://localhost:8080`), conferindo em `/`, `/login` e `/m/{slug}` (fallback SPA):
     - `Content-Security-Policy` com `default-src 'self'`, `script-src 'self'` sem `unsafe-inline`, `object-src 'none'`, `frame-ancestors 'none'` e `connect-src` incluindo a origem da API;
