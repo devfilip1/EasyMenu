@@ -883,6 +883,79 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ---
 
+## Phase 9: Pós-MVP (hardening)
+
+**Purpose**: ressalvas da revisão final (6) da Coruja, que aprovou o MVP. **Não distribuídas**: o
+dono do projeto decide quando entram. Mesmas regras do resto do arquivo: TEST antes de IMPL, e
+IMPL nunca edita teste. Quando o teste cobre um comportamento que já existe sem cobertura (itens
+6), a IMPL só ajusta o código se o teste falhar; se não falhar, o commit registra isso.
+
+### Sessões e hub da Cozinha
+
+- [ ] T134 [TEST-BACK] Corrida entre `Track` e `TerminateSessions` (ressalva 3a):
+  - `backend/tests/EasyMenu.IntegrationTests/Realtime/HubConnectionTrackerTests.cs`: com fakes de `HubCallerContext`, centenas de iterações de `Track(userId, ctx)` em paralelo com `TerminateSessions(userId)`. Todo contexto registrado antes de `TerminateSessions` retornar fica abortado, e nenhum contexto registrado depois de uma desativação continua aberto.
+  - Integração: conectar ao `/hubs/kitchen` concorrendo com `PUT /api/staff/{id}/deactivate`. Em ≤ 5 s não resta conexão aberta daquele usuário.
+- [ ] T135 [IMPL-BACK] `backend/src/EasyMenu.Api/Realtime/HubConnectionTracker.cs` (depende de: T134). T134 verde.
+  - Lock por usuário, ou registro de "usuário encerrado" consultado no `Track`.
+  - `KitchenHub.OnConnectedAsync` revalida `IsActive`/`SecurityStamp` **depois** do `Track` e aborta se a conta foi desativada no meio.
+- [ ] T136 [TEST-BACK] Expiração do token no hub (ressalva 3b): em `backend/tests/EasyMenu.IntegrationTests/Realtime/KitchenHubTests.cs`, uma conexão autenticada com token de validade curta é encerrada pelo servidor quando o token expira, e a reconexão com o mesmo token é recusada com 401. Use um host de teste com expiração curta e espere o fechamento com timeout.
+- [ ] T137 [IMPL-BACK] `app.MapHub<KitchenHub>("/hubs/kitchen", o => o.CloseOnAuthenticationExpiration = true)` em `backend/src/EasyMenu.Api/Program.cs` (depende de: T136). T136 verde.
+
+### Pagamento
+
+- [ ] T138 [TEST-BACK] Idempotência e compensação do pagamento (ressalva 4), em `backend/tests/EasyMenu.IntegrationTests/Checkout/PaymentCompensationTests.cs`, com um `IPaymentGateway` espião via `ConfigureTestServices`:
+  - `PaymentRequest.IdempotencyKey` é o mesmo em todas as tentativas de um checkout, inclusive nos retries do código de retirada, e diferente entre checkouts;
+  - quando o `SaveChanges` falha depois de um pagamento aprovado (interceptor de teste lançando na gravação do pedido), `RefundAsync` é chamado uma vez com o `TransactionId`, nenhum pedido fica gravado e a resposta é 500 sem vazar detalhes;
+  - pagamento recusado continua dando 402 `payment_declined`, sem refund.
+- [ ] T139 [IMPL-BACK] Pagamento idempotente e com estorno (depende de: T138). T138 verde.
+  - `backend/src/EasyMenu.Application/Abstractions/IPaymentGateway.cs`: `PaymentRequest` ganha `IdempotencyKey` (gerado uma vez por checkout) e a interface ganha `Task RefundAsync(string transactionId, CancellationToken)`, com XML docs que explicam o contrato para um gateway real (chave reaproveitável em retries; estorno compensatório quando a gravação falha);
+  - `FakePaymentGateway` implementa as duas coisas;
+  - o `CheckoutService` chama `RefundAsync` em `catch` da gravação e relança.
+
+### Concorrência na cozinha
+
+- [ ] T140 [TEST-BACK] Segundo conflito de concorrência vira 409 (ressalva 5), em `backend/tests/EasyMenu.IntegrationTests/Kitchen/KitchenConcurrencyTests.cs`: um interceptor de teste faz o `SaveChanges` lançar `DbUpdateConcurrencyException` duas vezes seguidas, e `PUT …/parts/{station}/status` e `PUT …/pickup` respondem **409** `application/problem+json` `code=concurrency_conflict`, nunca 500, sem notificação SignalR.
+  - **Pré-requisito do Arquiteto**: adicionar `concurrency_conflict` ao `ErrorCode` e ao 409 dessas duas operações em `contracts/openapi.yaml`. Isso deixa vermelhos o build do front e o `OpenApiContractTests` até T141 e T143, então os três (contrato, T141 e T143) entram juntos.
+- [ ] T141 [IMPL-BACK] Em `backend/src/EasyMenu.Application/Orders/KitchenService.cs`, o segundo `DbUpdateConcurrencyException` vira `ConflictException("concurrency_conflict")`, mapeado para 409. O código entra em `ErrorCodes` e no enum exposto no OpenAPI (depende de: T140). T140 e `OpenApiContractTests` verdes.
+- [ ] T142 [TEST-FRONT] Ampliar `frontend/src/app/core/errors/problem.spec.ts` (mensagem pt-BR de `concurrency_conflict`: "Outra pessoa alterou este pedido ao mesmo tempo. Atualizamos a lista.") e `frontend/src/app/features/kitchen/kitchen.page.spec.ts` (409 `concurrency_conflict` mostra a mensagem e faz resync).
+- [ ] T143 [IMPL-FRONT] Mensagem em `frontend/src/app/core/errors/problem.ts` e tratamento em `frontend/src/app/features/kitchen/kitchen.page.ts` (depende de: T142). T142 verde e `npm run build` verde.
+
+### Cobertura que faltou (ressalva 6)
+
+- [ ] T144 [TEST-FRONT] Fallback REST do hub da cozinha (e2f0a8b) em `frontend/src/app/core/realtime/kitchen-realtime.service.spec.ts`: quando `start()` rejeita, o serviço emite `resync$` uma vez (a lista vem do REST) e expõe `disconnected`; uma reconexão posterior emite um novo resync.
+- [ ] T145 [IMPL-FRONT] Ajustar `frontend/src/app/core/realtime/kitchen-realtime.service.ts` só se T144 falhar (depende de: T144).
+- [ ] T146 [TEST-BACK] `order_id NOT NULL` (c60a649) em `backend/tests/EasyMenu.IntegrationTests/Persistence/OrderSchemaTests.cs`:
+  - `information_schema.columns` mostra `is_nullable = 'NO'` para `order_items.order_id` e `order_parts.order_id`;
+  - `INSERT` via SQL com `order_id` nulo lança `PostgresException` `23502`.
+- [ ] T147 [IMPL-BACK] Ajustar `OrderConfiguration` e as migrations só se T146 falhar (depende de: T146).
+
+### Acessibilidade em tempo real (ressalva 7)
+
+- [ ] T148 [TEST-FRONT] Ampliar `frontend/src/app/features/order-tracking/order-tracking.page.spec.ts` e `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
+  - o status do pedido fica num elemento `role="status"` (`aria-live="polite"`) presente desde o primeiro render, e a mudança de status troca o texto **no mesmo nó**;
+  - a região do "Reconectando…" existe sempre no DOM, com `aria-live` e vazia quando conectado, sem `display:none`;
+  - `OrderCreated` atualiza uma live region `.sr-only` do painel com "Novo pedido {código}" (Bar/Cozinha), e `OrderPickedUp` não anuncia nada.
+- [ ] T149 [IMPL-FRONT] `frontend/src/app/features/order-tracking/order-tracking.page.ts` e `frontend/src/app/features/kitchen/kitchen.page.ts`, seguindo as convenções de a11y (depende de: T148). T148 verde.
+
+### Robustez de consultas e do hub público (ressalva 8)
+
+- [ ] T150 [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Realtime/OrdersHubTests.cs` e `backend/tests/EasyMenu.IntegrationTests/Persistence/SplitQueryTests.cs`:
+  - `SubscribeToOrder` com a conexão abortada no meio da chamada não registra log de erro (capturar com `ILoggerProvider` de teste) nem gera exceção não tratada;
+  - com um `DbCommandInterceptor` de teste, `GET /api/kitchen/orders`, `GET /api/orders/{orderId}` e o checkout carregam itens e partes em **consultas separadas**, sem um único `JOIN` de `order_items` com `order_parts` que gere produto cartesiano.
+- [ ] T151 [IMPL-BACK] (depende de: T150). T150 verde.
+  - `OrdersHub.SubscribeToOrder` captura `OperationCanceledException` e devolve `false` em silêncio;
+  - `AsSplitQuery()` nas consultas com `Include(o => o.Items).Include(o => o.Parts)` em `KitchenService`, `OrderQueryService` e `CheckoutService`, ou `UseQuerySplittingBehavior(SplitQuery)` global no `AppDbContext` (decisão do Dev, registrada no commit).
+
+### Backlog sem par por enquanto
+
+- **BL-01 EXIF/GPS nas fotos** (research R20): reencodar a imagem no upload, removendo metadados e
+  normalizando a orientação, junto com a troca de `IImageStorage` para S3/R2.
+- **BL-02 Escala horizontal da API** (plan, Riscos; README, Checklist de deploy): backplane Redis
+  no SignalR, `HubConnectionTracker` distribuído (pub/sub para abortar conexões em outras
+  réplicas) e rate limit distribuído (Redis). Até lá, a API roda com **1 réplica**.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Fases
@@ -927,6 +1000,7 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
   - T130→T131 de T039/T052;
   - T132→T133 de T050;
   - EXIF/GPS: backlog pós-MVP (research R20), sem task.
+- **Pós-MVP (T134–T151)**: não distribuídas, o dono decide quando entram. Os pares são independentes entre si, exceto T140→T141 e T142→T143, que entram junto com a mudança de contrato `concurrency_conflict`. BL-01 e BL-02 ainda não têm tasks.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
 
@@ -995,4 +1069,5 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
 | Polish | 11 | 2 | 1 | 4 | 4 |
-| **Total** | **133** | **37** | **31** | **39** | **26** |
+| Pós-MVP | 18 | 6 | 6 | 3 | 3 |
+| **Total** | **151** | **43** | **37** | **42** | **29** |
