@@ -14,6 +14,8 @@ internal sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
         builder.Property(c => c.Id).ValueGeneratedNever();
         builder.Property(c => c.Name).HasMaxLength(Category.NameMaxLength).IsRequired();
 
+        // Principal of the composite tenant FK from menu_items (constitution III, defence in depth).
+        builder.HasAlternateKey(c => new { c.EstablishmentId, c.Id });
         builder.HasIndex(c => new { c.EstablishmentId, c.Position });
         builder.HasOne<Establishment>().WithMany().HasForeignKey(c => c.EstablishmentId).OnDelete(DeleteBehavior.Restrict);
     }

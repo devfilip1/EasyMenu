@@ -20,6 +20,10 @@ internal sealed class MenuItemConfiguration : IEntityTypeConfiguration<MenuItem>
 
         builder.HasIndex(i => new { i.EstablishmentId, i.CategoryId, i.Position });
         builder.HasOne<Establishment>().WithMany().HasForeignKey(i => i.EstablishmentId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasOne<Category>().WithMany().HasForeignKey(i => i.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        // Composite FK: an item can only point to a category of its own establishment.
+        builder.HasOne<Category>().WithMany()
+            .HasForeignKey(i => new { i.EstablishmentId, i.CategoryId })
+            .HasPrincipalKey(c => new { c.EstablishmentId, c.Id })
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

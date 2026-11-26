@@ -461,7 +461,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - inserir em `menu_items` uma linha com `establishment_id` de B e `category_id` da categoria de A lança `PostgresException` com `SqlState == "23503"`;
   - a mesma inserção com `establishment_id` de A é aceita;
   - `UPDATE menu_items SET establishment_id = B` num item de A também falha com 23503.
-- [ ] T123 [US1] [IMPL-BACK] FK composta (depende de: T026, T122). T122 verde e suíte inteira verde (as migrations aplicam do zero no Testcontainers).
+- [X] T123 [US1] [IMPL-BACK] FK composta (depende de: T026, T122). T122 verde e suíte inteira verde (as migrations aplicam do zero no Testcontainers).
   - `CategoryConfiguration`: `HasAlternateKey(c => new { c.EstablishmentId, c.Id })`;
   - `MenuItemConfiguration`: `HasOne<Category>().WithMany().HasForeignKey(i => new { i.EstablishmentId, i.CategoryId }).HasPrincipalKey(c => new { c.EstablishmentId, c.Id }).OnDelete(Restrict)`, no lugar da FK simples;
   - migration `CompositeTenantForeignKeys` em `backend/src/EasyMenu.Infrastructure/Persistence/Migrations/`.

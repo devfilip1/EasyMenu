@@ -77,6 +77,9 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
                     b.HasKey("Id")
                         .HasName("pk_categories");
 
+                    b.HasAlternateKey("EstablishmentId", "Id")
+                        .HasName("ak_categories_establishment_id_id");
+
                     b.HasIndex("EstablishmentId", "Position")
                         .HasDatabaseName("ix_categories_establishment_id_position");
 
@@ -137,9 +140,6 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_menu_items");
-
-                    b.HasIndex("CategoryId")
-                        .HasDatabaseName("ix_menu_items_category_id");
 
                     b.HasIndex("EstablishmentId", "CategoryId", "Position")
                         .HasDatabaseName("ix_menu_items_establishment_id_category_id_position");
@@ -384,19 +384,20 @@ namespace EasyMenu.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("EasyMenu.Domain.Menu.MenuItem", b =>
                 {
-                    b.HasOne("EasyMenu.Domain.Menu.Category", null)
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
-                        .HasConstraintName("fk_menu_items_categories_category_id");
-
                     b.HasOne("EasyMenu.Domain.Establishments.Establishment", null)
                         .WithMany()
                         .HasForeignKey("EstablishmentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_menu_items_establishments_establishment_id");
+
+                    b.HasOne("EasyMenu.Domain.Menu.Category", null)
+                        .WithMany()
+                        .HasForeignKey("EstablishmentId", "CategoryId")
+                        .HasPrincipalKey("EstablishmentId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_menu_items_categories_establishment_id_category_id");
                 });
 
             modelBuilder.Entity("EasyMenu.Domain.Orders.Order", b =>
