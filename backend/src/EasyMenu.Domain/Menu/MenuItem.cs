@@ -123,8 +123,15 @@ public sealed class MenuItem : ITenantOwned
         return trimmed.Length is >= 1 and <= NameMaxLength ? trimmed : throw new DomainException("validation_failed");
     }
 
-    private static string? ValidDescription(string? description) =>
-        description is null || description.Length <= DescriptionMaxLength
-            ? description
-            : throw new DomainException("validation_failed");
+    /// <summary>Trimmed; blank becomes null. The length limit applies after trimming.</summary>
+    private static string? ValidDescription(string? description)
+    {
+        var trimmed = description?.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return null;
+        }
+
+        return trimmed.Length <= DescriptionMaxLength ? trimmed : throw new DomainException("validation_failed");
+    }
 }
