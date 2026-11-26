@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   effect,
   inject,
   input,
@@ -19,6 +20,8 @@ import { MenuItem } from '../../../api/generated/models/menu-item';
 import { MenuItemRequest } from '../../../api/generated/models/menu-item-request';
 import { Station } from '../../../api/generated/models/station';
 import { errorCode, problemFieldErrors, problemMessage } from '../../../core/errors/problem';
+import { FieldErrorComponent } from '../../../shared/forms/field-error.component';
+import { fieldErrorId, focusFirstInvalid } from '../../../shared/forms/form-a11y';
 import { formatCentsInput, parseBrlToCents } from './price-input';
 
 const PROMO_RULE = 'O preço promocional deve ser maior que zero e menor que o preço.';
@@ -39,7 +42,7 @@ const API_FIELDS: Record<string, Field> = {
 @Component({
   selector: 'app-menu-item-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, FieldErrorComponent],
   template: `
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
       @if (error()) {
@@ -53,11 +56,11 @@ const API_FIELDS: Record<string, Field> = {
           type="text"
           formControlName="name"
           maxlength="100"
+          aria-required="true"
           [attr.aria-invalid]="!!errorFor('name')"
+          [attr.aria-describedby]="errorId('name')"
         />
-        @if (errorFor('name'); as message) {
-          <span class="error">{{ message }}</span>
-        }
+        <app-field-error [id]="errorId('name')" [message]="errorFor('name')" />
       </div>
 
       <div class="field">
@@ -68,10 +71,9 @@ const API_FIELDS: Record<string, Field> = {
           maxlength="500"
           rows="2"
           [attr.aria-invalid]="!!errorFor('description')"
+          [attr.aria-describedby]="errorId('description')"
         ></textarea>
-        @if (errorFor('description'); as message) {
-          <span class="error">{{ message }}</span>
-        }
+        <app-field-error [id]="errorId('description')" [message]="errorFor('description')" />
       </div>
 
       <div class="field-grid">
@@ -83,11 +85,11 @@ const API_FIELDS: Record<string, Field> = {
             inputmode="decimal"
             placeholder="0,00"
             formControlName="price"
+            aria-required="true"
             [attr.aria-invalid]="!!errorFor('price')"
+            [attr.aria-describedby]="errorId('price')"
           />
-          @if (errorFor('price'); as message) {
-            <span class="error">{{ message }}</span>
-          }
+          <app-field-error [id]="errorId('price')" [message]="errorFor('price')" />
         </div>
 
         <div class="field">
@@ -99,10 +101,9 @@ const API_FIELDS: Record<string, Field> = {
             placeholder="Opcional"
             formControlName="promo"
             [attr.aria-invalid]="!!errorFor('promo')"
+            [attr.aria-describedby]="errorId('promo')"
           />
-          @if (errorFor('promo'); as message) {
-            <span class="error">{{ message }}</span>
-          }
+          <app-field-error [id]="errorId('promo')" [message]="errorFor('promo')" />
         </div>
 
         <div class="field">
@@ -110,15 +111,15 @@ const API_FIELDS: Record<string, Field> = {
           <select
             id="item-station"
             formControlName="station"
+            aria-required="true"
             [attr.aria-invalid]="!!errorFor('station')"
+            [attr.aria-describedby]="errorId('station')"
           >
             <option [ngValue]="null" disabled>Selecione</option>
             <option ngValue="bar">Bar</option>
             <option ngValue="kitchen">Cozinha</option>
           </select>
-          @if (errorFor('station'); as message) {
-            <span class="error">{{ message }}</span>
-          }
+          <app-field-error [id]="errorId('station')" [message]="errorFor('station')" />
         </div>
 
         <div class="field">
@@ -126,16 +127,16 @@ const API_FIELDS: Record<string, Field> = {
           <select
             id="item-category"
             formControlName="category"
+            aria-required="true"
             [attr.aria-invalid]="!!errorFor('category')"
+            [attr.aria-describedby]="errorId('category')"
           >
             <option [ngValue]="null" disabled>Selecione</option>
             @for (category of categories(); track category.id) {
               <option [ngValue]="category.id">{{ category.name }}</option>
             }
           </select>
-          @if (errorFor('category'); as message) {
-            <span class="error">{{ message }}</span>
-          }
+          <app-field-error [id]="errorId('category')" [message]="errorFor('category')" />
         </div>
       </div>
 
@@ -145,12 +146,12 @@ const API_FIELDS: Record<string, Field> = {
           id="item-photo"
           type="file"
           accept="image/jpeg,image/png,image/webp"
+          [attr.aria-invalid]="!!photoError()"
+          [attr.aria-describedby]="'item-photo-hint ' + errorId('photo')"
           (change)="onFile($event)"
         />
-        <span class="hint">JPEG, PNG ou WebP, até 5 MB.</span>
-        @if (photoError()) {
-          <span class="error" role="alert">{{ photoError() }}</span>
-        }
+        <span class="hint" id="item-photo-hint">JPEG, PNG ou WebP, até 5 MB.</span>
+        <app-field-error [id]="errorId('photo')" [message]="photoError()" />
         @if (current()?.photoUrl) {
           <div>
             <button
@@ -185,6 +186,7 @@ const API_FIELDS: Record<string, Field> = {
 })
 export class MenuItemFormComponent {
   private readonly api = inject(Api);
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
 
   /** Categories offered in the "Categoria" select. */
   readonly categories = input<Category[]>([]);
@@ -227,6 +229,10 @@ export class MenuItemFormComponent {
     this.photoError.set(null);
   }
 
+  protected errorId(field: Field | 'photo'): string {
+    return fieldErrorId('item', field);
+  }
+
   protected errorFor(field: Field): string | null {
     const server = this.serverErrors()[field];
     if (server) return server;
@@ -253,7 +259,11 @@ export class MenuItemFormComponent {
     this.error.set(null);
     this.serverErrors.set({});
     const body = this.request();
-    if (!body || this.busy()) return;
+    if (!body) {
+      focusFirstInvalid(this.form, this.host, (name) => !!this.errorFor(name as Field));
+      return;
+    }
+    if (this.busy()) return;
 
     this.busy.set(true);
     try {

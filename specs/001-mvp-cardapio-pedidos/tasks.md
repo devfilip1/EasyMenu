@@ -456,7 +456,7 @@ reordenar as categorias e verificar ordem e dados no admin (E2E T042).
   - erro de promoção ligado ao campo de promoção;
   - erros de foto (`invalid_image_type`/`image_too_large`) ligados ao input de arquivo, em live region;
   - foco no primeiro inválido.
-- [ ] T121 [US1] [IMPL-FRONT] Aplicar `shared/forms` em `frontend/src/app/features/admin/menu/menu-item-form.component.ts` (depende de: T119, T120). T120 verde.
+- [X] T121 [US1] [IMPL-FRONT] Aplicar `shared/forms` em `frontend/src/app/features/admin/menu/menu-item-form.component.ts` (depende de: T119, T120). T120 verde.
 - [X] T122 [P] [US1] [TEST-BACK] `backend/tests/EasyMenu.IntegrationTests/Persistence/TenantForeignKeyTests.cs` (depende de: T026). Com A e B cadastrados e a categoria de A criada via API, usar SQL direto (`ExecuteSqlRawAsync`, sem passar pelo tenant da aplicação):
   - inserir em `menu_items` uma linha com `establishment_id` de B e `category_id` da categoria de A lança `PostgresException` com `SqlState == "23503"`;
   - a mesma inserção com `establishment_id` de A é aceita;
