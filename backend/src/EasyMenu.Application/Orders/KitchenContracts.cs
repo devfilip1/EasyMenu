@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using EasyMenu.Domain.Menu;
 using EasyMenu.Domain.Orders;
 
@@ -10,6 +11,18 @@ public enum PartStatusTarget
 {
     InPreparation = PartStatus.InPreparation,
     Ready = PartStatus.Ready,
+}
+
+/// <summary>Code typed by the staff to confirm a pickup (FR-027a); the server trims it and ignores case.</summary>
+public sealed class ConfirmPickupRequest
+{
+    // Present but blank is a business error (pickup_code_required) checked after the order state, so empty strings
+    // pass the model validation; a missing property is 400 validation_failed.
+    [Required(AllowEmptyStrings = true)]
+    [StringLength(MaxLength)]
+    public string PickupCode { get; init; } = null!;
+
+    public const int MaxLength = 20;
 }
 
 public sealed class UpdatePartStatusRequest

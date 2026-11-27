@@ -48,6 +48,7 @@ public sealed class ProblemDetailsExceptionHandler(IProblemDetailsService proble
         ErrorCodes.NotFound => StatusCodes.Status404NotFound,
         _ when code.EndsWith("_not_found", StringComparison.Ordinal) => StatusCodes.Status404NotFound,
         "category_not_empty" or "items_unavailable" or "invalid_status_transition" or "order_not_ready"
+            or ErrorCodes.OrderAlreadyPickedUp
             => StatusCodes.Status409Conflict,
         _ when code.EndsWith("_taken", StringComparison.Ordinal) => StatusCodes.Status409Conflict,
         "image_too_large" or PayloadTooLargeCodeAttribute.DefaultCode => StatusCodes.Status413PayloadTooLarge,

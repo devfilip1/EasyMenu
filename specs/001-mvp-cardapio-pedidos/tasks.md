@@ -921,7 +921,7 @@ Regras do contrato (detalhes na `description` da operação):
     - falhas não emitem evento (2 s sem `OrderPickedUp`/`OrderUpdated`);
     - **isolamento**: o token de B com o código correto do pedido de A dá 404.
   - **Ajustar os chamadores existentes** para enviar o código: `backend/tests/EasyMenu.IntegrationTests/Infrastructure/ApiDriver.Kitchen.cs` (o helper de pickup recebe e envia `pickupCode`, por padrão o do pedido), `Kitchen/KitchenEndpointsTests.cs`, `Realtime/KitchenHubTests.cs`, `Realtime/OrdersHubTests.cs` e `Orders/OrdersEndpointsTests.cs`. Os casos de "repetir a retirada é idempotente" passam a esperar 409 `order_already_picked_up`.
-- [ ] T153 [IMPL-BACK] Retirada com código (depende de: T152). T152, a suíte inteira e `OpenApiContractTests` verdes.
+- [X] T153 [IMPL-BACK] Retirada com código (depende de: T152). T152, a suíte inteira e `OpenApiContractTests` verdes.
   - `backend/src/EasyMenu.Domain/Orders/{Order.cs,PickupCode.cs}`: `PickupCode.Matches(string? provided)` com `Trim().ToUpperInvariant()` e `Order.ConfirmPickup`;
   - `ConfirmPickupRequest` em `backend/src/EasyMenu.Application/Orders/`;
   - `KitchenService`: na segunda falha de concorrência, recarrega e devolve `order_already_picked_up`;

@@ -30,10 +30,16 @@ public sealed class KitchenController(KitchenService kitchen) : ControllerBase
         Guid orderId, Station station, UpdatePartStatusRequest request, CancellationToken cancellationToken) =>
         Ok(await kitchen.MovePartAsync(orderId, station, request.Status, cancellationToken));
 
+    /// <summary>
+    /// Confirms the pickup with the code the customer shows (FR-027a). Body validation (400 validation_failed)
+    /// comes first, then 404, 409 order_already_picked_up / order_not_ready, and 400 pickup_code_required /
+    /// invalid_pickup_code.
+    /// </summary>
     [HttpPut("{orderId:guid}/pickup", Name = "markOrderPickedUp")]
     [ProducesResponseType<KitchenOrderResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiProblem>(StatusCodes.Status400BadRequest, ApiProblem.MediaType)]
     [ProducesResponseType<ApiProblem>(StatusCodes.Status404NotFound, ApiProblem.MediaType)]
     [ProducesResponseType<ApiProblem>(StatusCodes.Status409Conflict, ApiProblem.MediaType)]
-    public async Task<IActionResult> MarkPickedUp(Guid orderId, CancellationToken cancellationToken) =>
-        Ok(await kitchen.MarkPickedUpAsync(orderId, cancellationToken));
+    public async Task<IActionResult> ConfirmPickup(Guid orderId, ConfirmPickupRequest request, CancellationToken cancellationToken) =>
+        Ok(await kitchen.ConfirmPickupAsync(orderId, request.PickupCode, cancellationToken));
 }

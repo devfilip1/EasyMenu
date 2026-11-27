@@ -125,12 +125,17 @@ public sealed class Order : ITenantOwned
         : _parts.Any(p => p.Status != PartStatus.Received) ? OrderStatus.InPreparation
         : OrderStatus.Paid;
 
-    /// <summary>Marks the order as picked up; only from <c>ready</c> (<c>order_not_ready</c>), idempotent once picked up.</summary>
-    public void MarkPickedUp(DateTimeOffset now)
+    /// <summary>
+    /// Confirms the pickup with the code typed by the staff (FR-027a), checked in this order: already picked up →
+    /// <c>order_already_picked_up</c> (the first pickup time is kept); not ready → <c>order_not_ready</c>; blank →
+    /// <c>pickup_code_required</c>; different (after trim, case-insensitive) → <c>invalid_pickup_code</c>.
+    /// A rejected confirmation changes nothing.
+    /// </summary>
+    public void ConfirmPickup(string? providedCode, DateTimeOffset now)
     {
         if (Status == OrderStatus.PickedUp)
         {
-            return; // keeps the first pickup time
+            throw new DomainException("order_already_picked_up");
         }
 
         if (Status != OrderStatus.Ready)
@@ -138,17 +143,19 @@ public sealed class Order : ITenantOwned
             throw new DomainException("order_not_ready");
         }
 
+        if (string.IsNullOrWhiteSpace(providedCode))
+        {
+            throw new DomainException("pickup_code_required");
+        }
+
+        if (!Orders.PickupCode.Matches(PickupCode, providedCode))
+        {
+            throw new DomainException("invalid_pickup_code");
+        }
+
         PickedUpAt = now;
         RecalculateStatus();
     }
-
-    /// <summary>
-    /// Confirms the pickup with the code typed by the staff (FR-027a): already picked up → <c>order_already_picked_up</c>;
-    /// not ready → <c>order_not_ready</c>; blank → <c>pickup_code_required</c>; different (after trim, case-insensitive)
-    /// → <c>invalid_pickup_code</c>. Replaces <see cref="MarkPickedUp"/>.
-    /// </summary>
-    /// <remarks>Stub signature added by the test author (T152); implementation belongs to T153.</remarks>
-    public void ConfirmPickup(string? providedCode, DateTimeOffset now) => throw new NotImplementedException();
 
     private static bool IsValidQuantity(int quantity) => quantity is >= MinQuantity and <= MaxQuantity;
 

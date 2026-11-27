@@ -51,4 +51,7 @@ public enum ErrorCode
     RateLimited,
     Unauthorized,
     Forbidden,
+    PickupCodeRequired,
+    InvalidPickupCode,
+    OrderAlreadyPickedUp,
 }

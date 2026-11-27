@@ -12,4 +12,11 @@ public static class PickupCode
 
     /// <summary>Random code from <see cref="Alphabet"/> (cryptographic RNG).</summary>
     public static string Generate() => RandomNumberGenerator.GetString(Alphabet, Length);
+
+    /// <summary>
+    /// Whether the code typed by the staff is <paramref name="expected"/>: surrounding spaces and case are ignored,
+    /// inner spaces are not (<c>" k7p4 "</c> matches, <c>"K7 P4"</c> does not).
+    /// </summary>
+    public static bool Matches(string expected, string? provided) =>
+        provided is not null && string.Equals(expected, provided.Trim().ToUpperInvariant(), StringComparison.Ordinal);
 }

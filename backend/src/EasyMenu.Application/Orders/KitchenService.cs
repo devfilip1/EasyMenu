@@ -25,8 +25,9 @@ public sealed class KitchenService(IAppDbContext db, IOrderNotifier notifier, Ti
         Guid orderId, Station station, PartStatusTarget target, CancellationToken cancellationToken) =>
         ChangeAsync(orderId, (order, now) => order.MovePart(station, (PartStatus)target, now), cancellationToken);
 
-    public Task<KitchenOrderResponse> MarkPickedUpAsync(Guid orderId, CancellationToken cancellationToken) =>
-        ChangeAsync(orderId, (order, now) => order.MarkPickedUp(now), cancellationToken);
+    /// <summary>Confirms the pickup with the typed code; a concurrent loser is re-evaluated and gets order_already_picked_up.</summary>
+    public Task<KitchenOrderResponse> ConfirmPickupAsync(Guid orderId, string pickupCode, CancellationToken cancellationToken) =>
+        ChangeAsync(orderId, (order, now) => order.ConfirmPickup(pickupCode, now), cancellationToken);
 
     public static KitchenOrderResponse ToKitchenOrder(Order order) => new()
     {

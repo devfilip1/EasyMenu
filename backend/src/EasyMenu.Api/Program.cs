@@ -26,6 +26,8 @@ builder.Services
         options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider(JsonNamingPolicy.CamelCase));
         // Enums in route and query use their snake_case names, as in JSON (e.g. ?status=picked_up).
         options.ModelBinderProviders.Insert(0, new SnakeCaseEnumModelBinderProvider());
+        // A request without any body is a missing body (400 validation_failed), not an unsupported media type.
+        MissingBodyAwareContentTypeFilter.Register(options);
     })
     .AddJsonOptions(options => ApiJsonOptions.Apply(options.JsonSerializerOptions))
     .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = InvalidModelStateResponse.Create);
