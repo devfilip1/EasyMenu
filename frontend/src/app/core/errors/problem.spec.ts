@@ -51,6 +51,15 @@ describe('problemMessage', () => {
     expect(problemMessage(code)).toBe(message);
   });
 
+  it.each([
+    ['pickup_code_required', 'Informe o código de retirada'],
+    ['invalid_pickup_code', 'Código de retirada incorreto'],
+    ['order_already_picked_up', 'Este pedido já foi retirado'],
+  ] as const)('"%s" → "%s" (T154)', (code, message) => {
+    expect(ERROR_CODE).toContain(code);
+    expect(problemMessage(code)).toBe(message);
+  });
+
   it('uses a distinct message per code (only the two "too large" codes share one)', () => {
     // payload_too_large (any request body) and image_too_large (photo) mean the same to the user.
     const shared = new Set(['payload_too_large', 'image_too_large']);

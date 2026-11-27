@@ -2,7 +2,21 @@ import { HttpTestingController } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
-import { alertText, button, queryButton, region, rows, textOf } from '../../../testing/dom';
+import {
+  alertText,
+  button,
+  byLabel,
+  expectFieldError,
+  inPoliteLiveRegion,
+  isRequired,
+  queryButton,
+  queryByLabel,
+  region,
+  rows,
+  snapshotDescribedBy,
+  textOf,
+  typeInto,
+} from '../../../testing/dom';
 import {
   apiUrl,
   expectNoRequest,
@@ -226,30 +240,140 @@ describe('KitchenPage', () => {
     });
   });
 
-  describe('"Retirado"', () => {
-    it('only appears once the order is ready', async () => {
+  describe('pickup with the pickup code (T154, FR-027a)', () => {
+    const CODE_LABEL = /c[óo]digo de retirada/i;
+    const pickupUrl = (orderId: string) => apiUrl(markOrderPickedUp.PATH, { orderId });
+    /** Second ready order, so per-card ids can be checked across orders too. */
+    const ORDER_E: KitchenOrder = {
+      id: 'order-e',
+      pickupCode: 'EEE6',
+      customerName: null,
+      status: 'ready',
+      createdAt: '2026-11-26T11:55:00Z',
+      parts: [{ station: 'bar', status: 'ready', items: [{ name: 'Água', quantity: 1 }] }],
+    };
+
+    /** The first card of the order that carries the pickup form. */
+    function pickupCard(code: string): HTMLElement {
+      const found = [...cards('Bar'), ...cards('Cozinha')].find(
+        (c) => textOf(c).includes(code) && queryByLabel(c, CODE_LABEL) !== null,
+      );
+      if (!found) throw new Error(`No card of ${code} with a "Código de retirada" field`);
+      return found;
+    }
+    const field = (code: string) => byLabel(pickupCard(code), CODE_LABEL);
+    const confirm = (code: string) => button(pickupCard(code), /confirmar retirada/i);
+
+    async function confirmWith(code: string, typed: string): Promise<void> {
+      typeInto(field(code), typed);
+      await settle(fixture);
+      confirm(code).click();
+      await settle(fixture);
+    }
+
+    it('no longer offers a direct "Retirado" button', async () => {
       await resync();
 
-      expect(queryButton(card('Bar', 'AAA2'), /retirado/i)).toBeNull();
-      expect(queryButton(card('Bar', 'BBB3'), /retirado/i)).toBeNull();
-      const ready = [card('Bar', 'CCC4'), card('Cozinha', 'CCC4')];
-      expect(ready.some((c) => queryButton(c, /retirado/i) !== null)).toBe(true);
+      expect(queryButton(el, /^retirado$/i)).toBeNull();
     });
 
-    it('calls markOrderPickedUp and removes the order from both sections', async () => {
+    it('a ready order shows the "Código de retirada" field and "Confirmar retirada"', async () => {
+      await resync([ORDER_A, ORDER_B, ORDER_C, ORDER_E]);
+
+      const input = field('CCC4');
+      expect(isRequired(input)).toBe(true);
+      expect(input.getAttribute('autocomplete')).toBe('off');
+      expect(input.getAttribute('autocapitalize')).toBe('characters');
+      expect(input.getAttribute('maxlength')).toBe('20');
+      expect(confirm('CCC4').disabled).toBe(false);
+    });
+
+    it('each pickup field has its own id', async () => {
+      await resync([ORDER_C, ORDER_E]);
+
+      const inputs = [...cards('Bar'), ...cards('Cozinha')]
+        .map((c) => queryByLabel(c, CODE_LABEL))
+        .filter((i): i is HTMLInputElement => i !== null);
+      const ids = inputs.map((i) => i.id);
+      expect(inputs.length).toBeGreaterThanOrEqual(2);
+      expect(ids.every((id) => id.length > 0)).toBe(true);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it('orders that are not ready show neither the field nor the button', async () => {
       await resync();
 
-      const withButton = [card('Bar', 'CCC4'), card('Cozinha', 'CCC4')].find(
-        (c) => queryButton(c, /retirado/i) !== null,
-      )!;
-      button(withButton, /retirado/i).click();
-      await settle(fixture);
+      for (const code of ['AAA2', 'BBB3']) {
+        for (const c of [...cards('Bar'), ...cards('Cozinha')].filter((x) => textOf(x).includes(code))) {
+          expect(queryByLabel(c, CODE_LABEL)).toBeNull();
+          expect(queryButton(c, /confirmar retirada/i)).toBeNull();
+        }
+      }
+    });
 
-      expectRequest(httpMock, 'PUT', apiUrl(markOrderPickedUp.PATH, { orderId: ORDER_C.id })).flush(ORDER_C);
+    it('sends the code exactly as typed through markOrderPickedUp and removes the order on 200', async () => {
+      await resync();
+
+      await confirmWith('CCC4', ' ccc4 ');
+
+      const req = expectRequest(httpMock, 'PUT', pickupUrl(ORDER_C.id));
+      expect(req.request.body).toEqual({ pickupCode: ' ccc4 ' });
+      req.flush({ ...ORDER_C, status: 'picked_up' });
       await settle(fixture);
 
       expect(codes('Bar')).toEqual(['AAA2', 'BBB3']);
       expect(codes('Cozinha')).toEqual(['AAA2']);
+    });
+
+    it('an empty code is not sent: field error and focus on the field', async () => {
+      await resync();
+      const baseline = snapshotDescribedBy(field('CCC4'));
+
+      await confirmWith('CCC4', '   ');
+
+      expectNoRequest(httpMock, 'PUT', pickupUrl(ORDER_C.id));
+      const error = expectFieldError(field('CCC4'), 'Informe o código de retirada', baseline);
+      expect(inPoliteLiveRegion(error)).toBe(true);
+      expect(document.activeElement).toBe(field('CCC4'));
+    });
+
+    it('400 invalid_pickup_code keeps the card, shows the field error and refocuses, without resync', async () => {
+      await resync();
+
+      await confirmWith('CCC4', 'XXXX');
+      flushProblem(expectRequest(httpMock, 'PUT', pickupUrl(ORDER_C.id)), 400, 'invalid_pickup_code');
+      await settle(fixture);
+
+      expectNoRequest(httpMock, 'GET', LIST_URL);
+      expect(codes('Bar')).toEqual(['CCC4', 'AAA2', 'BBB3']);
+      const error = expectFieldError(field('CCC4'), 'Código de retirada incorreto');
+      expect(inPoliteLiveRegion(error)).toBe(true);
+      expect(document.activeElement).toBe(field('CCC4'));
+    });
+
+    it('409 order_already_picked_up shows role="alert" and resyncs', async () => {
+      await resync();
+
+      await confirmWith('CCC4', 'CCC4');
+      flushProblem(expectRequest(httpMock, 'PUT', pickupUrl(ORDER_C.id)), 409, 'order_already_picked_up');
+      await settle(fixture);
+
+      expect(alertText(el)).toContain('Este pedido já foi retirado');
+      expectRequest(httpMock, 'GET', LIST_URL).flush([ORDER_A, ORDER_B]);
+      await settle(fixture);
+      expect(codes('Bar')).toEqual(['AAA2', 'BBB3']);
+    });
+
+    it('disables "Confirmar retirada" while the request is in flight', async () => {
+      await resync();
+
+      await confirmWith('CCC4', 'CCC4');
+      const req = expectRequest(httpMock, 'PUT', pickupUrl(ORDER_C.id));
+      expect(confirm('CCC4').disabled).toBe(true);
+
+      flushProblem(req, 400, 'invalid_pickup_code');
+      await settle(fixture);
+      expect(confirm('CCC4').disabled).toBe(false);
     });
   });
 
@@ -279,7 +403,7 @@ describe('KitchenPage', () => {
       expect(cards('Bar')).toHaveLength(1);
       expect(queryButton(card('Bar', 'AAA2'), /^pronto$/i)).toBeNull();
       const all = [card('Bar', 'AAA2'), card('Cozinha', 'AAA2')];
-      expect(all.some((c) => queryButton(c, /retirado/i) !== null)).toBe(true);
+      expect(all.some((c) => queryButton(c, /confirmar retirada/i) !== null)).toBe(true);
     });
 
     it('OrderPickedUp removes the order', async () => {
