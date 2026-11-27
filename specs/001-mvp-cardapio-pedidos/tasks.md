@@ -942,7 +942,7 @@ Regras do contrato (detalhes na `description` da operação):
     - 200: o cartão sai da lista;
     - botão desabilitado durante o envio;
     - pedidos não prontos não mostram o campo.
-- [ ] T155 [IMPL-FRONT] `frontend/src/app/core/errors/problem.ts` (3 mensagens) e cartão Pronto em `frontend/src/app/features/kitchen/kitchen.page.ts`, usando `shared/forms` (depende de: T154). T154 verde, e `npm test` e `npm run build` verdes.
+- [X] T155 [IMPL-FRONT] `frontend/src/app/core/errors/problem.ts` (3 mensagens) e cartão Pronto em `frontend/src/app/features/kitchen/kitchen.page.ts`, usando `shared/forms` (depende de: T154). T154 verde, e `npm test` e `npm run build` verdes.
 - [X] T156 [TEST-FRONT] E2E e helpers com o código (depende de: T152, T154). Fica verde quando T153 e T155 estiverem prontas.
   - `frontend/e2e/support/kitchen.ts`: `pickUp(token, orderId, pickupCode)` envia o corpo, e os chamadores passam o código do pedido;
   - `frontend/e2e/us3-kitchen.spec.ts`, em vez de clicar em "Retirado":

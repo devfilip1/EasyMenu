@@ -1,7 +1,9 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
   OnInit,
   computed,
   inject,
@@ -20,6 +22,8 @@ import { UpdatePartStatusRequest } from '../../api/generated/models/update-part-
 import { AuthStore } from '../../core/auth/auth.store';
 import { errorCode, problemMessage } from '../../core/errors/problem';
 import { KitchenRealtimeService } from '../../core/realtime/kitchen-realtime.service';
+import { FieldErrorComponent } from '../../shared/forms/field-error.component';
+import { fieldErrorId } from '../../shared/forms/form-a11y';
 
 interface Ticket {
   order: KitchenOrder;
@@ -38,7 +42,7 @@ const PART_LABELS: Record<KitchenOrderPart['status'], string> = {
 @Component({
   selector: 'app-kitchen-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, FieldErrorComponent],
   template: `
     <header class="topbar">
       <div class="page row">
@@ -102,17 +106,46 @@ const PART_LABELS: Record<KitchenOrderPart['status'], string> = {
                       Pronto
                     </button>
                   }
-                  @if (ticket.order.status === 'ready') {
-                    <button
-                      class="btn btn-sm btn-primary"
-                      type="button"
-                      [disabled]="busy() === ticket.order.id"
-                      (click)="pickUp(ticket.order)"
-                    >
-                      Retirado
-                    </button>
-                  }
                 </div>
+                @if (ticket.order.status === 'ready') {
+                  @if (ticket.part.station === pickupStation(ticket.order)) {
+                    <form
+                      class="pickup"
+                      novalidate
+                      (submit)="$event.preventDefault(); pickUp(ticket.order)"
+                    >
+                      <div class="field">
+                        <label [for]="pickupInputId(ticket.order)">Código de retirada</label>
+                        <input
+                          type="text"
+                          maxlength="20"
+                          autocomplete="off"
+                          autocapitalize="characters"
+                          spellcheck="false"
+                          aria-required="true"
+                          [id]="pickupInputId(ticket.order)"
+                          [value]="pickupCodes()[ticket.order.id] ?? ''"
+                          [attr.aria-invalid]="!!pickupErrors()[ticket.order.id]"
+                          [attr.aria-describedby]="pickupErrorId(ticket.order)"
+                          (input)="setPickupCode(ticket.order, $any($event.target).value)"
+                        />
+                        <app-field-error
+                          [id]="pickupErrorId(ticket.order)"
+                          [message]="pickupErrors()[ticket.order.id] ?? null"
+                        />
+                      </div>
+                      <button
+                        class="btn btn-sm btn-primary"
+                        type="submit"
+                        [disabled]="busy() === ticket.order.id"
+                      >
+                        Confirmar retirada
+                      </button>
+                    </form>
+                  } @else {
+                    <p class="muted">Pedido pronto: confira o código no cartão do Bar.</p>
+                  }
+                }
               </article>
             } @empty {
               <p class="muted">Nenhum pedido em aberto.</p>
@@ -172,6 +205,12 @@ const PART_LABELS: Record<KitchenOrderPart['status'], string> = {
       margin: 0.5rem 0;
       padding-left: 1.1rem;
     }
+    .pickup {
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border);
+    }
     .notice-warn {
       padding: 0.75rem 1rem;
       border-radius: var(--radius-sm);
@@ -192,9 +231,14 @@ export class KitchenPage implements OnInit {
     { id: 'kitchen', label: 'Cozinha' },
   ];
 
+  private readonly host: HTMLElement = inject(ElementRef).nativeElement;
+
   protected readonly orders = signal<KitchenOrder[]>([]);
   protected readonly busy = signal<string | null>(null);
   protected readonly error = signal<string | null>(null);
+  /** Pickup code typed per ready order, and its field error. */
+  protected readonly pickupCodes = signal<Record<string, string>>({});
+  protected readonly pickupErrors = signal<Record<string, string | null>>({});
 
   /** Parts grouped by station, oldest order first. */
   protected readonly tickets = computed(() => {
@@ -244,11 +288,51 @@ export class KitchenPage implements OnInit {
     });
   }
 
+  /** The single card of a ready order that carries the pickup form (Bar when present). */
+  protected pickupStation(order: KitchenOrder): Station {
+    return order.parts.some((p) => p.station === 'bar') ? 'bar' : 'kitchen';
+  }
+
+  protected pickupInputId(order: KitchenOrder): string {
+    return `pickup-code-${order.id}`;
+  }
+
+  protected pickupErrorId(order: KitchenOrder): string {
+    return fieldErrorId('pickup-code', order.id);
+  }
+
+  protected setPickupCode(order: KitchenOrder, value: string): void {
+    this.pickupCodes.update((codes) => ({ ...codes, [order.id]: value }));
+    this.setPickupError(order.id, null);
+  }
+
+  /** Confirms the pickup with the code the customer shows; the server normalizes it. */
   protected async pickUp(order: KitchenOrder): Promise<void> {
-    await this.act(order.id, async () => {
-      await this.api.invoke(markOrderPickedUp, { orderId: order.id });
+    if (this.busy() === order.id) return;
+    const pickupCode = this.pickupCodes()[order.id] ?? '';
+    this.error.set(null);
+    if (!pickupCode.trim()) {
+      this.setPickupError(order.id, problemMessage('pickup_code_required'));
+      this.focusPickupInput(order);
+      return;
+    }
+
+    this.busy.set(order.id);
+    try {
+      await this.api.invoke(markOrderPickedUp, { orderId: order.id, body: { pickupCode } });
       this.removeOrder(order.id);
-    });
+    } catch (err) {
+      const code = errorCode(err);
+      if (code === 'invalid_pickup_code' || code === 'pickup_code_required') {
+        this.setPickupError(order.id, problemMessage(code));
+        this.focusPickupInput(order);
+      } else {
+        this.error.set(problemMessage(code));
+        if (isStale(err)) await this.load();
+      }
+    } finally {
+      this.busy.set(null);
+    }
   }
 
   protected logout(): void {
@@ -271,12 +355,19 @@ export class KitchenPage implements OnInit {
     try {
       await action();
     } catch (err) {
-      const code = errorCode(err);
-      this.error.set(problemMessage(code));
-      if (err && (err as { status?: number }).status === 409) await this.load();
+      this.error.set(problemMessage(errorCode(err)));
+      if (isStale(err)) await this.load();
     } finally {
       this.busy.set(null);
     }
+  }
+
+  private setPickupError(orderId: string, message: string | null): void {
+    this.pickupErrors.update((errors) => ({ ...errors, [orderId]: message }));
+  }
+
+  private focusPickupInput(order: KitchenOrder): void {
+    this.host.querySelector<HTMLInputElement>(`#${CSS.escape(this.pickupInputId(order))}`)?.focus();
   }
 
   private upsert(order: KitchenOrder): void {
@@ -289,5 +380,12 @@ export class KitchenPage implements OnInit {
 
   private removeOrder(id: string): void {
     this.orders.update((list) => list.filter((o) => o.id !== id));
+    this.pickupCodes.update(({ [id]: _code, ...rest }) => rest);
+    this.pickupErrors.update(({ [id]: _error, ...rest }) => rest);
   }
+}
+
+/** 409 (e.g. order_already_picked_up, invalid transition) or 404: the board is out of date. */
+function isStale(err: unknown): boolean {
+  return err instanceof HttpErrorResponse && (err.status === 409 || err.status === 404);
 }
