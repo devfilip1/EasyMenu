@@ -44,6 +44,34 @@ simulado.
   definitivo no MVP (para não invalidar QR codes impressos); o nome do estabelecimento pode ser
   editado.
 
+### Session 2026-11-27
+
+> Ajustes pedidos pelo dono do projeto após testar o MVP implementado; detalhes em aberto
+> decididos pelo agente de Produto com bom senso de MVP.
+
+- Q: A navegação do painel do Dono pode gerar rolagem horizontal em telas estreitas? → A: Não.
+  As abas (Cardápio, Equipe, Pedidos, Estabelecimento, Painel da cozinha, Sair) MUST caber na
+  largura da tela a partir de 360 px, sem rolagem horizontal da página nem da barra de abas;
+  podem ocupar mais de uma linha, mas todas ficam visíveis e acionáveis (FR-039, SC-008, US5
+  cenário 6).
+- Q: Como a equipe confirma que entregou o pedido à pessoa certa? → A: Para marcar um pedido
+  Pronto como Retirado, a equipe digita o código de retirada que o consumidor apresenta no
+  balcão; o sistema confere o código no servidor e só então marca como Retirado (FR-027,
+  FR-027a, US3 cenários 5, 7 e 8).
+- Q: O código é digitado no cartão do pedido ou num campo geral que localiza o pedido? → A: No
+  cartão do pedido Pronto (ação "Confirmar retirada"); o código é conferido contra aquele
+  pedido específico. Um código válido de outro pedido conta como código errado.
+- Q: Como o código digitado é comparado? → A: Maiúsculas/minúsculas são ignoradas e espaços no
+  início e no fim são removidos; qualquer outra diferença (inclusive espaços no meio) torna o
+  código incorreto.
+- Q: O que acontece quando o código está errado? → A: O pedido continua Pronto e o painel
+  mostra a mensagem "Código de retirada incorreto"; a equipe pode tentar de novo, sem limite de
+  tentativas no MVP. Campo vazio também é recusado com mensagem clara.
+- Q: O painel continua mostrando o código de retirada dos pedidos? → A: Sim; o painel segue
+  exibindo o código (FR-028) para a equipe identificar os pedidos entre as seções Bar e
+  Cozinha. A digitação serve como conferência contra entrega trocada, não como proteção
+  antifraude; ocultar o código no painel fica fora do MVP.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Dono cadastra estabelecimento e monta o cardápio (Priority: P1)
@@ -140,7 +168,8 @@ Bar e Cozinha. Cada pedido pago aparece automaticamente, sem recarregar a págin
 correspondentes aos setores dos seus itens (um pedido com cerveja e porção aparece nas duas
 seções, cada uma mostrando só os seus itens). A equipe marca cada parte como Em preparo e
 depois Pronto. Quando todas as partes de um pedido estão prontas, o pedido fica Pronto. Quando
-o consumidor retira no balcão, a equipe marca o pedido como Retirado.
+o consumidor vai ao balcão, ele apresenta o código de retirada; a equipe digita esse código no
+pedido e, se conferir, o pedido é marcado como Retirado.
 
 **Why this priority**: fecha o ciclo operacional (pedido pago → preparo → entrega); sem ele os
 pedidos não chegam a quem prepara.
@@ -148,7 +177,8 @@ pedidos não chegam a quem prepara.
 **Independent Test**: logado como Cozinha, com o painel aberto, criar um pedido pago contendo
 um item de Bar e um de Cozinha; verificar que ele aparece nas duas seções sem recarregar,
 avançar cada parte até Pronto, confirmar que o pedido fica Pronto apenas depois da segunda
-parte e então marcá-lo como Retirado.
+parte, tentar a retirada com um código errado (recusada) e então confirmá-la digitando o
+código correto.
 
 **Acceptance Scenarios**:
 
@@ -164,10 +194,17 @@ parte e então marcá-lo como Retirado.
 4. **Given** um pedido com partes de Bar e de Cozinha, **When** apenas a parte de Bar está
    Pronta, **Then** o pedido ainda não está Pronto; **When** a parte da Cozinha também fica
    Pronta, **Then** o pedido passa a Pronto.
-5. **Given** um pedido Pronto, **When** a equipe o marca como Retirado, **Then** ele sai da
-   lista de pedidos em andamento do painel.
+5. **Given** um pedido Pronto com código de retirada `K7P4`, **When** a equipe aciona
+   "Confirmar retirada" nesse pedido e digita `K7P4`, **Then** o pedido passa a Retirado e sai
+   da lista de pedidos em andamento de todos os painéis abertos do estabelecimento.
 6. **Given** usuários de dois estabelecimentos diferentes, **When** um pedido é feito no
    estabelecimento A, **Then** ele nunca aparece no painel do estabelecimento B.
+7. **Given** um pedido Pronto com código `K7P4`, **When** a equipe digita ` k7p4 ` (minúsculas
+   e com espaços nas pontas), **Then** o código é aceito e o pedido passa a Retirado.
+8. **Given** um pedido Pronto com código `K7P4`, **When** a equipe digita um código diferente
+   (ex.: `K7P5`, o código de outro pedido, `K7 P4`) ou deixa o campo vazio, **Then** o pedido
+   continua Pronto, permanece no painel e é exibida a mensagem "Código de retirada incorreto"
+   (ou, para campo vazio, "Informe o código de retirada"); a equipe pode tentar novamente.
 
 ---
 
@@ -194,8 +231,9 @@ exibe o aviso de retirada quando o pedido fica Pronto.
    status exibido muda para "Em preparo" em até 5 segundos, sem recarregar.
 3. **Given** a página do pedido aberta, **When** o pedido fica Pronto, **Then** a página exibe
    em até 5 segundos um aviso destacado "Seu pedido está pronto — retire no balcão" com o código.
-4. **Given** um pedido marcado como Retirado, **When** o consumidor abre a página, **Then** vê
-   o status "Retirado".
+4. **Given** a equipe confirmou a retirada digitando o código correto, **When** o consumidor
+   está com a página do pedido aberta ou a abre depois, **Then** vê o status "Retirado" (em até
+   5 segundos, se a página estiver aberta).
 5. **Given** o consumidor fechou e reabriu o navegador no mesmo aparelho, **When** ele volta à
    página do pedido, **Then** continua vendo o status atualizado.
 
@@ -228,6 +266,10 @@ pedidos e verificar que mostra apenas os pedidos do próprio estabelecimento.
    total e status, podendo filtrar por status, e pode abrir um pedido para ver seus itens.
 5. **Given** dois estabelecimentos, **When** o Dono de A abre a lista de pedidos ou tenta
    acessar um pedido de B diretamente, **Then** não vê nem acessa nada de B.
+6. **Given** um Dono autenticado num celular com tela de 360 px de largura, **When** ele abre
+   o painel do Dono, **Then** todas as abas de navegação (Cardápio, Equipe, Pedidos,
+   Estabelecimento, Painel da cozinha, Sair) ficam visíveis e acionáveis, sem rolagem
+   horizontal da página nem da barra de abas.
 
 ---
 
@@ -257,7 +299,12 @@ pedidos e verificar que mostra apenas os pedidos do próprio estabelecimento.
   todos os painéis exibem o mesmo valor.
 - Tentativa de voltar status (ex.: de Pronto para Em preparo) ou pular etapas indevidas: não
   permitida no MVP, exceto marcar Pronto direto de "recebido".
-- Tentativa de marcar como Retirado um pedido que ainda não está Pronto: recusada.
+- Tentativa de marcar como Retirado um pedido que ainda não está Pronto: recusada, mesmo com o
+  código correto.
+- Código de retirada digitado errado, de outro pedido ou vazio: retirada recusada com mensagem
+  clara; o pedido continua Pronto.
+- Duas pessoas confirmam a retirada do mesmo pedido ao mesmo tempo: o pedido é marcado como
+  Retirado uma única vez e a segunda confirmação informa que o pedido já foi retirado.
 - Alguém tenta abrir a página de um pedido informando apenas o código de retirada ou um
   identificador inventado: recebe "pedido não encontrado".
 - Dono tenta cadastrar um membro da Cozinha com e-mail já usado por qualquer conta: cadastro
@@ -343,9 +390,17 @@ pedidos e verificar que mostra apenas os pedidos do próprio estabelecimento.
   permitidos no MVP.
 - **FR-026**: O status do pedido MUST ser derivado das partes: Pago (nenhuma parte iniciada),
   Em preparo (alguma parte em preparo ou pronta, mas não todas prontas), Pronto (todas as
-  partes prontas) e Retirado (marcado pela equipe).
-- **FR-027**: A equipe MUST poder marcar como Retirado apenas pedidos Prontos; pedidos
-  Retirados MUST sair da lista de pedidos em andamento do painel.
+  partes prontas) e Retirado (confirmado pela equipe com o código de retirada, conforme
+  FR-027).
+- **FR-027**: A equipe MUST poder marcar como Retirado apenas pedidos Prontos, e somente
+  informando o código de retirada daquele pedido, que o consumidor apresenta no balcão; pedidos
+  Retirados MUST sair da lista de pedidos em andamento de todos os painéis do estabelecimento.
+- **FR-027a**: A conferência do código de retirada MUST ser feita pelo sistema no servidor,
+  comparando com o código do pedido escolhido, ignorando maiúsculas/minúsculas e espaços no
+  início e no fim. Código diferente (inclusive o de outro pedido) ou vazio MUST NOT marcar o
+  pedido como Retirado: o pedido continua Pronto e a equipe vê uma mensagem clara ("Código de
+  retirada incorreto" / "Informe o código de retirada"), podendo tentar de novo sem limite de
+  tentativas no MVP.
 - **FR-028**: O painel MUST exibir os pedidos em andamento em ordem de chegada (mais antigo
   primeiro), com código de retirada, nome do consumidor (se houver), horário e itens com
   quantidades.
@@ -388,6 +443,13 @@ pedidos e verificar que mostra apenas os pedidos do próprio estabelecimento.
 - **FR-038**: O cardápio público e a página do pedido MUST expor apenas os dados necessários
   ao consumidor (nunca dados de equipe, de outros pedidos ou de outros estabelecimentos).
 
+**Layout responsivo**
+
+- **FR-039**: A navegação por abas do painel do Dono (Cardápio, Equipe, Pedidos,
+  Estabelecimento, Painel da cozinha, Sair) MUST se ajustar à largura da tela a partir de
+  360 px: nenhuma rolagem horizontal da página nem da barra de abas, com todas as abas
+  visíveis e acionáveis sem rolar para o lado (podendo ocupar mais de uma linha).
+
 ### Key Entities
 
 - **Estabelecimento**: o negócio (bar, boate, restaurante). Atributos: nome (editável), slug
@@ -427,8 +489,12 @@ pedidos e verificar que mostra apenas os pedidos do próprio estabelecimento.
   alteração posterior no cardápio, e nenhum total diverge da soma de (preço unitário ×
   quantidade) dos seus itens.
 - **SC-007**: 0 pedidos contendo itens que estavam esgotados no momento da compra.
-- **SC-008**: O cardápio público e a página do pedido são plenamente utilizáveis em celulares
-  com tela a partir de 360 px de largura.
+- **SC-008**: O cardápio público, a página do pedido e o painel do Dono são plenamente
+  utilizáveis em celulares com tela a partir de 360 px de largura, sem rolagem horizontal da
+  página; no painel do Dono, 100% das abas de navegação ficam visíveis e acionáveis sem
+  rolagem horizontal em 360 px.
+- **SC-009**: 0 pedidos marcados como Retirado sem que o código de retirada correto tenha sido
+  informado.
 
 ## Assumptions
 
