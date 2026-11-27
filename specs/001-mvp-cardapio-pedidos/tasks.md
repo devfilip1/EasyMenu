@@ -883,7 +883,87 @@ perde o acesso; a lista de pedidos só mostra os do próprio estabelecimento.
 
 ---
 
-## Phase 9: Pós-MVP (hardening)
+## Phase 9: Ajustes pós-teste do dono (2026-11-27)
+
+**Purpose**: mudanças da spec no commit 4477e9a. A retirada passa a exigir o código de retirada,
+conferido no servidor (FR-027, FR-027a, SC-009, US3 cenários 5, 7 e 8), e as abas do `/admin`
+cabem em 360 px (FR-039, SC-008, US5 cenário 6).
+
+> ⚠️ **Contrato já alterado neste commit**: `PUT /api/kitchen/orders/{orderId}/pickup` exige o
+> corpo `ConfirmPickupRequest { pickupCode }`, e o `ErrorCode` ganhou `pickup_code_required`,
+> `invalid_pickup_code` e `order_already_picked_up`. Isso deixa vermelhos o
+> `OpenApiContractTests` e o build do front (`Record<ErrorCode, string>` e a chamada de
+> `markOrderPickedUp` sem corpo) até T153 e T155. Executar em sequência imediata:
+> T152 → T153 (back) e T154 → T155 (front).
+
+Regras do contrato (detalhes na `description` da operação):
+- comparação com `trim` + maiúsculas: `" k7p4 "` vale; `"K7 P4"` e o código de outro pedido não valem;
+- ordem das verificações:
+  1. corpo ou propriedade ausente: 400 `validation_failed`;
+  2. 404;
+  3. já retirado: 409 `order_already_picked_up`;
+  4. não pronto: 409 `order_not_ready`;
+  5. vazio ou só espaços: 400 `pickup_code_required`;
+  6. código diferente: 400 `invalid_pickup_code`;
+- confirmações concorrentes: uma dá 200 e a outra 409 `order_already_picked_up`, com `OrderPickedUp` emitido uma única vez; falhas não emitem evento;
+- a retirada deixa de ser idempotente: repetir dá 409 `order_already_picked_up`.
+
+### Retirada com código (back)
+
+- [ ] T152 [TEST-BACK] Retirada com código (depende de: contrato deste commit).
+  - **Unidade**, em `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderStatusTests.cs`: `Order.ConfirmPickup(providedCode, now)` (substitui `MarkPickedUp`) aceita `"K7P4"` e `" k7p4 "`; `"K7P5"` e `"K7 P4"` dão `invalid_pickup_code` sem mudar o estado; `""`, `"   "` e `null` dão `pickup_code_required`; não pronto dá `order_not_ready` mesmo com o código certo; já retirado dá `order_already_picked_up`.
+  - **Integração**, novo `backend/tests/EasyMenu.IntegrationTests/Kitchen/PickupWithCodeTests.cs`:
+    - todos os casos da ordem de verificações acima, com o status HTTP e o `code` exatos;
+    - o código de **outro pedido** do mesmo estabelecimento dá 400 `invalid_pickup_code`;
+    - depois de uma falha, o pedido continua `ready` e na lista `GET /api/kitchen/orders`;
+    - corpo sem `pickupCode` dá 400 `validation_failed`;
+    - **concorrência**: duas confirmações corretas simultâneas dão um 200 e um 409 `order_already_picked_up`, e uma conexão do `/hubs/kitchen` recebe **um** `OrderPickedUp`;
+    - falhas não emitem evento (2 s sem `OrderPickedUp`/`OrderUpdated`);
+    - **isolamento**: o token de B com o código correto do pedido de A dá 404.
+  - **Ajustar os chamadores existentes** para enviar o código: `backend/tests/EasyMenu.IntegrationTests/Infrastructure/ApiDriver.Kitchen.cs` (o helper de pickup recebe e envia `pickupCode`, por padrão o do pedido), `Kitchen/KitchenEndpointsTests.cs`, `Realtime/KitchenHubTests.cs`, `Realtime/OrdersHubTests.cs` e `Orders/OrdersEndpointsTests.cs`. Os casos de "repetir a retirada é idempotente" passam a esperar 409 `order_already_picked_up`.
+- [ ] T153 [IMPL-BACK] Retirada com código (depende de: T152). T152, a suíte inteira e `OpenApiContractTests` verdes.
+  - `backend/src/EasyMenu.Domain/Orders/{Order.cs,PickupCode.cs}`: `PickupCode.Matches(string? provided)` com `Trim().ToUpperInvariant()` e `Order.ConfirmPickup`;
+  - `ConfirmPickupRequest` em `backend/src/EasyMenu.Application/Orders/`;
+  - `KitchenService`: na segunda falha de concorrência, recarrega e devolve `order_already_picked_up`;
+  - `KitchenController`: corpo + `ProducesResponseType` 400/409;
+  - os 3 códigos novos em `ErrorCodes`, no mapeamento de status do `ProblemDetailsExceptionHandler` (400/400/409) e no enum exposto no OpenAPI.
+
+### Retirada com código (front)
+
+- [ ] T154 [TEST-FRONT] Cartão Pronto com conferência do código (depende de: contrato deste commit).
+  - `frontend/src/app/core/errors/problem.spec.ts`: `pickup_code_required` → "Informe o código de retirada"; `invalid_pickup_code` → "Código de retirada incorreto"; `order_already_picked_up` → "Este pedido já foi retirado".
+  - `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
+    - o botão "Retirado" direto deixa de existir;
+    - o pedido `ready` mostra um campo rotulado "Código de retirada" (`id` único por cartão, `aria-required="true"`, `autocomplete="off"`, `autocapitalize="characters"`, `maxlength="20"`) e o botão "Confirmar retirada";
+    - enviar chama `markOrderPickedUp` com `{ orderId, body: { pickupCode } }`, passando o valor **como digitado**: quem normaliza é o servidor;
+    - vazio: não chama a API e mostra "Informe o código de retirada" no erro do campo (padrão a11y das convenções: `aria-invalid`, `aria-describedby` e live region), com foco no campo;
+    - 400 `invalid_pickup_code`: o cartão continua, a mensagem aparece no erro do campo e o foco volta ao campo, sem resync;
+    - 409 `order_already_picked_up`: mensagem em `role="alert"` e resync;
+    - 200: o cartão sai da lista;
+    - botão desabilitado durante o envio;
+    - pedidos não prontos não mostram o campo.
+- [ ] T155 [IMPL-FRONT] `frontend/src/app/core/errors/problem.ts` (3 mensagens) e cartão Pronto em `frontend/src/app/features/kitchen/kitchen.page.ts`, usando `shared/forms` (depende de: T154). T154 verde, e `npm test` e `npm run build` verdes.
+- [ ] T156 [TEST-FRONT] E2E e helpers com o código (depende de: T152, T154). Fica verde quando T153 e T155 estiverem prontas.
+  - `frontend/e2e/support/kitchen.ts`: `pickUp(token, orderId, pickupCode)` envia o corpo, e os chamadores passam o código do pedido;
+  - `frontend/e2e/us3-kitchen.spec.ts`, em vez de clicar em "Retirado":
+    - digitar um código errado mostra "Código de retirada incorreto" e o pedido continua;
+    - vazio mostra "Informe o código de retirada";
+    - `" <código em minúsculas> "` confirma e o pedido some do painel;
+  - `frontend/e2e/us4-tracking.spec.ts` e `frontend/e2e/us5-staff.spec.ts`: as retiradas usam o código;
+  - revisar `frontend/e2e/mobile-360.spec.ts` e `security-headers.spec.ts` se dependerem da retirada.
+
+### Abas do admin em 360 px (FR-039)
+
+- [ ] T157 [TEST-FRONT] Novo `frontend/e2e/admin-tabs-360.spec.ts` (projetos mobile e desktop, viewport forçado em 360×740) (depende de: T017):
+  - em `/admin/cardapio`, logado como Dono: `document.documentElement.scrollWidth <= clientWidth`;
+  - o `nav[aria-label="Seções do painel"]` tem `scrollWidth <= clientWidth` e não usa `overflow-x: auto|scroll`;
+  - as 6 abas (Cardápio, Equipe, Pedidos, Estabelecimento, Painel da cozinha, Sair) têm bounding box inteira dentro do viewport e altura ≥ 44 px, e cada link navega ao ser clicado sem rolar para o lado;
+  - repetir em 412 px e 1280 px.
+- [ ] T158 [IMPL-FRONT] Abas responsivas em `frontend/src/app/features/admin/admin-shell.component.ts` (ex.: `flex-wrap: wrap` e `gap`, sem largura mínima fixa nem `white-space: nowrap` que estoure a linha) (depende de: T157). T157 verde, e `admin-shell.component.spec.ts` e `mobile-360.spec.ts` continuam verdes.
+
+---
+
+## Phase 10: Pós-MVP (hardening)
 
 **Purpose**: ressalvas da revisão final (6) da Coruja, que aprovou o MVP. **Não distribuídas**: o
 dono do projeto decide quando entram. Mesmas regras do resto do arquivo: TEST antes de IMPL, e
@@ -1000,6 +1080,10 @@ IMPL nunca edita teste. Quando o teste cobre um comportamento que já existe sem
   - T130→T131 de T039/T052;
   - T132→T133 de T050;
   - EXIF/GPS: backlog pós-MVP (research R20), sem task.
+- **Ajustes pós-teste do dono (T152–T158)**:
+  - T152→T153 e T154→T155 em **sequência imediata**, porque o contrato já mudou e as suítes ficam vermelhas até elas;
+  - T156 (E2E e helpers) fica verde com T153+T155;
+  - T157→T158 (abas em 360 px) são independentes.
 - **Pós-MVP (T134–T151)**: não distribuídas, o dono decide quando entram. Os pares são independentes entre si, exceto T140→T141 e T142→T143, que entram junto com a mudança de contrato `concurrency_conflict`. BL-01 e BL-02 ainda não têm tasks.
 - **Polish (T089–T093, T102–T105)**: depois de todas as stories, exceto T104/T105, que podem
   adiantar.
@@ -1069,5 +1153,6 @@ lado alterado MUST estar verdes (constituição, fluxo com agentes).
 | US4 | 10 | 2 | 2 | 4 | 2 |
 | US5 | 10 | 3 | 3 | 3 | 1 |
 | Polish | 11 | 2 | 1 | 4 | 4 |
+| Ajustes pós-teste | 7 | 1 | 1 | 3 | 2 |
 | Pós-MVP | 18 | 6 | 6 | 3 | 3 |
-| **Total** | **151** | **43** | **37** | **42** | **29** |
+| **Total** | **158** | **44** | **38** | **45** | **31** |

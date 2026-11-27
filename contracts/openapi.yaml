@@ -586,18 +586,44 @@ paths:
     put:
       tags: [Kitchen]
       operationId: markOrderPickedUp
-      summary: Marca como Retirado; só para pedidos Prontos (FR-027). Idempotente.
+      summary: Confirma a retirada conferindo o código de retirada do pedido (FR-027, FR-027a).
+      description: |
+        O servidor compara `pickupCode` com o código **deste** pedido, ignorando
+        maiúsculas/minúsculas e espaços no início e no fim (`trim` + `upper`). Qualquer outra
+        diferença, inclusive espaços no meio ou o código de outro pedido, é código incorreto. Não
+        há limite de tentativas no MVP.
+        Ordem das verificações (a primeira que falhar define a resposta):
+        1. corpo ausente ou sem a propriedade `pickupCode`: 400 `validation_failed`;
+        2. pedido inexistente ou de outro estabelecimento: 404 `not_found`;
+        3. pedido já retirado: 409 `order_already_picked_up`, inclusive para a segunda de duas
+           confirmações concorrentes, que acontecem uma única vez;
+        4. pedido ainda não Pronto: 409 `order_not_ready`, mesmo com o código correto;
+        5. `pickupCode` vazio ou só espaços: 400 `pickup_code_required`;
+        6. código diferente: 400 `invalid_pickup_code`.
+        Nas falhas, o pedido continua como estava e nenhum evento SignalR é emitido. No sucesso,
+        o pedido vira `picked_up` e é emitido `OrderPickedUp` (cozinha) e `OrderUpdated`
+        (página pública) **uma única vez**.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConfirmPickupRequest" }
       responses:
         "200":
           description: Retirado.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/KitchenOrder" }
+        "400":
+          description: "`pickup_code_required` ('Informe o código de retirada'), `invalid_pickup_code` ('Código de retirada incorreto') ou `validation_failed`."
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/ProblemDetails" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: "`order_not_ready`."
+          description: "`order_not_ready` ou `order_already_picked_up` ('Este pedido já foi retirado')."
           content:
             application/problem+json:
               schema: { $ref: "#/components/schemas/ProblemDetails" }
@@ -810,6 +836,9 @@ components:
         - order_not_ready
         - unauthorized
         - forbidden
+        - pickup_code_required
+        - invalid_pickup_code
+        - order_already_picked_up
         - rate_limited
         - payload_too_large
 
@@ -1073,6 +1102,14 @@ components:
       properties:
         id: { type: string, format: uuid }
         pickupCode: { type: string }
+    ConfirmPickupRequest:
+      type: object
+      required: [pickupCode]
+      properties:
+        pickupCode:
+          type: string
+          maxLength: 20
+          description: Código digitado pela equipe; o servidor faz trim e ignora caixa. Vazio dá `pickup_code_required`.
     UpdatePartStatusRequest:
       type: object
       required: [status]

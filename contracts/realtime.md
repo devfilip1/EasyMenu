@@ -36,7 +36,7 @@ pelo `id`/`publicToken`.
 |---|---|---|
 | `OrderCreated` | `KitchenOrder` | Pedido pago criado no estabelecimento. |
 | `OrderUpdated` | `KitchenOrder` | Status de alguma parte mudou e/ou o pedido mudou de status (ex.: virou `ready`). |
-| `OrderPickedUp` | `OrderPickedUpEvent` | Pedido marcado como retirado; o cliente remove o pedido da lista de andamento. |
+| `OrderPickedUp` | `OrderPickedUpEvent` | Retirada confirmada com o código correto (`PUT …/pickup`). O cliente remove o pedido da lista de andamento. Sai **uma única vez** por pedido, mesmo com confirmações concorrentes. Tentativas recusadas (código vazio ou incorreto, pedido não pronto ou já retirado) não emitem evento. |
 
 ```json
 // OrderPickedUpEvent
