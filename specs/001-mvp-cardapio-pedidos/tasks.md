@@ -930,7 +930,7 @@ Regras do contrato (detalhes na `description` da operação):
 
 ### Retirada com código (front)
 
-- [ ] T154 [TEST-FRONT] Cartão Pronto com conferência do código (depende de: contrato deste commit).
+- [X] T154 [TEST-FRONT] Cartão Pronto com conferência do código (depende de: contrato deste commit).
   - `frontend/src/app/core/errors/problem.spec.ts`: `pickup_code_required` → "Informe o código de retirada"; `invalid_pickup_code` → "Código de retirada incorreto"; `order_already_picked_up` → "Este pedido já foi retirado".
   - `frontend/src/app/features/kitchen/kitchen.page.spec.ts`:
     - o botão "Retirado" direto deixa de existir;
