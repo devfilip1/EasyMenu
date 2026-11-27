@@ -142,6 +142,14 @@ public sealed class Order : ITenantOwned
         RecalculateStatus();
     }
 
+    /// <summary>
+    /// Confirms the pickup with the code typed by the staff (FR-027a): already picked up → <c>order_already_picked_up</c>;
+    /// not ready → <c>order_not_ready</c>; blank → <c>pickup_code_required</c>; different (after trim, case-insensitive)
+    /// → <c>invalid_pickup_code</c>. Replaces <see cref="MarkPickedUp"/>.
+    /// </summary>
+    /// <remarks>Stub signature added by the test author (T152); implementation belongs to T153.</remarks>
+    public void ConfirmPickup(string? providedCode, DateTimeOffset now) => throw new NotImplementedException();
+
     private static bool IsValidQuantity(int quantity) => quantity is >= MinQuantity and <= MaxQuantity;
 
     private static string? ValidCustomerName(string? customerName)

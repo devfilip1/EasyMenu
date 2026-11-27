@@ -78,7 +78,7 @@ public sealed class OrdersHubTests(EasyMenuApiFactory factory) : IntegrationTest
         await MoveAsync(kitchenToken, order.Id, "kitchen", "in_preparation");  // order status unchanged
         await MoveAsync(kitchenToken, order.Id, "bar", "ready");               // still in_preparation
         await MoveAsync(kitchenToken, order.Id, "kitchen", "ready");           // → ready
-        (await Api.PutPickupAsync(kitchenToken, order.Id)).StatusCode.Should().Be(HttpStatusCode.OK); // → picked_up
+        (await Api.PutPickupAsync(kitchenToken, order)).StatusCode.Should().Be(HttpStatusCode.OK); // → picked_up
 
         await WaitUntilAsync(() => received.Any(e => e.Status == "picked_up"));
         await Task.Delay(TimeSpan.FromMilliseconds(500)); // let any extra (wrong) event arrive

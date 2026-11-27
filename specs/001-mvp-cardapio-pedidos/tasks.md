@@ -910,7 +910,7 @@ Regras do contrato (detalhes na `description` da operação):
 
 ### Retirada com código (back)
 
-- [ ] T152 [TEST-BACK] Retirada com código (depende de: contrato deste commit).
+- [X] T152 [TEST-BACK] Retirada com código (depende de: contrato deste commit).
   - **Unidade**, em `backend/tests/EasyMenu.UnitTests/Domain/Orders/OrderStatusTests.cs`: `Order.ConfirmPickup(providedCode, now)` (substitui `MarkPickedUp`) aceita `"K7P4"` e `" k7p4 "`; `"K7P5"` e `"K7 P4"` dão `invalid_pickup_code` sem mudar o estado; `""`, `"   "` e `null` dão `pickup_code_required`; não pronto dá `order_not_ready` mesmo com o código certo; já retirado dá `order_already_picked_up`.
   - **Integração**, novo `backend/tests/EasyMenu.IntegrationTests/Kitchen/PickupWithCodeTests.cs`:
     - todos os casos da ordem de verificações acima, com o status HTTP e o `code` exatos;

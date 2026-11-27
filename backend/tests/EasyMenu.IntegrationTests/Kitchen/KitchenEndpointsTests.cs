@@ -72,7 +72,7 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
 
         (await Client.GetAsync(Route)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await Api.PutPartStatusAsync(null, order.Id, "bar", "ready")).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await Api.PutPickupAsync(null, order.Id)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await Api.PutPickupAsync(null, order)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         (await Api.ListKitchenOrdersAsync(owner.Token)).Single().Status.Should().Be("paid");
     }
 
@@ -166,7 +166,7 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
         var (_, order) = await PlaceMixedOrderAsync(owner, menu);
         await ReadOrderAsync(await Api.PutPartStatusAsync(kitchenToken, order.Id, "bar", "ready"), "bar ready");
 
-        var problem = await ApiDriver.ReadProblemAsync(await Api.PutPickupAsync(kitchenToken, order.Id));
+        var problem = await ApiDriver.ReadProblemAsync(await Api.PutPickupAsync(kitchenToken, order));
 
         problem.Status.Should().Be(409, problem.RawBody);
         problem.MediaType.Should().Be("application/problem+json");
@@ -182,7 +182,7 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
         var ready = await Api.MakeReadyAsync(kitchenToken, order);
         ready.Status.Should().Be("ready");
 
-        var pickedUp = await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order.Id), "pickup");
+        var pickedUp = await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order), "pickup");
 
         pickedUp.Status.Should().Be("picked_up");
         (await Api.ListKitchenOrdersAsync(kitchenToken)).Should().BeEmpty();
@@ -191,14 +191,18 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
     }
 
     [Fact]
-    public async Task Pickup_is_idempotent()
+    public async Task Repeating_the_pickup_returns_409_order_already_picked_up()
     {
         var (owner, menu, kitchenToken) = await ArrangeAsync();
         var (_, order) = await PlaceMixedOrderAsync(owner, menu);
         await Api.MakeReadyAsync(kitchenToken, order);
-        await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order.Id), "first pickup");
+        await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order), "first pickup");
 
-        (await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order.Id), "second pickup")).Status.Should().Be("picked_up");
+        var problem = await ApiDriver.ReadProblemAsync(await Api.PutPickupAsync(kitchenToken, order));
+
+        problem.Status.Should().Be(409, problem.RawBody);
+        problem.MediaType.Should().Be("application/problem+json");
+        problem.Code.Should().Be("order_already_picked_up");
     }
 
     [Fact]
@@ -214,7 +218,7 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
         first.PickupCode.Should().Be("ABCD");
         var order = (await Api.ListKitchenOrdersAsync(kitchenToken)).Single();
         await Api.MakeReadyAsync(kitchenToken, order);
-        await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order.Id), "pickup");
+        await ReadOrderAsync(await Api.PutPickupAsync(kitchenToken, order), "pickup");
 
         var response = await Api.PostOrderAsync(slug, request, client);
 
@@ -265,7 +269,7 @@ public sealed class KitchenEndpointsTests(EasyMenuApiFactory factory) : Integrat
         var (_, orderA) = await PlaceMixedOrderAsync(ownerA, menuA);
 
         var part = await ApiDriver.ReadProblemAsync(await Api.PutPartStatusAsync(kitchenB, orderA.Id, "bar", "ready"));
-        var pickup = await ApiDriver.ReadProblemAsync(await Api.PutPickupAsync(kitchenB, orderA.Id));
+        var pickup = await ApiDriver.ReadProblemAsync(await Api.PutPickupAsync(kitchenB, orderA));
 
         part.Status.Should().Be(404, part.RawBody);
         part.Code.Should().Be("not_found");

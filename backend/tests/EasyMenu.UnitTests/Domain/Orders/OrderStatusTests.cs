@@ -11,6 +11,7 @@ public sealed class OrderStatusTests
     private static readonly DateTimeOffset PlacedAt = new(2026, 11, 26, 20, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Later = PlacedAt.AddMinutes(5);
     private static readonly DateTimeOffset MuchLater = PlacedAt.AddMinutes(15);
+    private const string Code = "K7P4";
 
     private static Order NewOrder(bool withBar = true, bool withKitchen = true)
     {
@@ -25,7 +26,7 @@ public sealed class OrderStatusTests
             lines.Add(new OrderLineSnapshot(Guid.CreateVersion7(), "Batata", 3000, Station.Kitchen, 1));
         }
 
-        return Order.Place(Guid.CreateVersion7(), null, lines, "AB2C", new string('t', 43), PlacedAt);
+        return Order.Place(Guid.CreateVersion7(), null, lines, Code, new string('t', 43), PlacedAt);
     }
 
     private static PartStatus PartOf(Order order, Station station) => order.Parts.Single(p => p.Station == station).Status;
@@ -169,31 +170,7 @@ public sealed class OrderStatusTests
         order.Status.Should().Be(OrderStatus.InPreparation);
     }
 
-    // ------------------------------------------------------------------ pickup (FR-027)
-
-    [Fact]
-    public void Picking_up_a_paid_order_is_order_not_ready()
-    {
-        var order = NewOrder();
-
-        var act = () => order.MarkPickedUp(Later);
-
-        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_not_ready");
-        order.PickedUpAt.Should().BeNull();
-        order.Status.Should().Be(OrderStatus.Paid);
-    }
-
-    [Fact]
-    public void Picking_up_an_order_in_preparation_is_order_not_ready()
-    {
-        var order = NewOrder();
-        order.MovePart(Station.Bar, PartStatus.Ready, Later);
-
-        var act = () => order.MarkPickedUp(MuchLater);
-
-        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_not_ready");
-        order.Status.Should().Be(OrderStatus.InPreparation);
-    }
+    // ------------------------------------------------------------------ pickup with code (FR-027, FR-027a)
 
     private static Order ReadyOrder()
     {
@@ -203,26 +180,103 @@ public sealed class OrderStatusTests
         return order;
     }
 
-    [Fact]
-    public void Picking_up_a_ready_order_records_picked_up_at()
+    private static Order PickedUpOrder()
+    {
+        var order = ReadyOrder();
+        order.ConfirmPickup(Code, MuchLater);
+        return order;
+    }
+
+    [Theory]
+    [InlineData("K7P4")]
+    [InlineData(" k7p4 ")]
+    [InlineData("k7P4")]
+    public void Right_code_confirms_the_pickup_of_a_ready_order(string provided)
     {
         var order = ReadyOrder();
 
-        order.MarkPickedUp(MuchLater);
+        order.ConfirmPickup(provided, MuchLater);
 
         order.Status.Should().Be(OrderStatus.PickedUp);
         order.PickedUpAt.Should().Be(MuchLater);
     }
 
-    [Fact]
-    public void Picking_up_again_is_idempotent()
+    [Theory]
+    [InlineData("K7P5")]
+    [InlineData("K7 P4")]
+    [InlineData("K7P")]
+    [InlineData("K7P44")]
+    public void Wrong_code_is_invalid_pickup_code_and_changes_nothing(string provided)
     {
         var order = ReadyOrder();
-        order.MarkPickedUp(MuchLater);
 
-        var act = () => order.MarkPickedUp(MuchLater.AddMinutes(10));
+        var act = () => order.ConfirmPickup(provided, MuchLater);
 
-        act.Should().NotThrow();
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("invalid_pickup_code");
+        order.Status.Should().Be(OrderStatus.Ready);
+        order.PickedUpAt.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Blank_code_is_pickup_code_required(string? provided)
+    {
+        var order = ReadyOrder();
+
+        var act = () => order.ConfirmPickup(provided, MuchLater);
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("pickup_code_required");
+        order.Status.Should().Be(OrderStatus.Ready);
+        order.PickedUpAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void Paid_order_is_order_not_ready_even_with_the_right_code()
+    {
+        var order = NewOrder();
+
+        var act = () => order.ConfirmPickup(Code, Later);
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_not_ready");
+        order.Status.Should().Be(OrderStatus.Paid);
+        order.PickedUpAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void Order_in_preparation_is_order_not_ready_even_with_the_right_code()
+    {
+        var order = NewOrder();
+        order.MovePart(Station.Bar, PartStatus.Ready, Later);
+
+        var act = () => order.ConfirmPickup(Code, MuchLater);
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_not_ready");
+        order.Status.Should().Be(OrderStatus.InPreparation);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("XXXX")]
+    public void Not_ready_is_checked_before_the_code(string provided)
+    {
+        var act = () => NewOrder().ConfirmPickup(provided, Later);
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_not_ready");
+    }
+
+    [Theory]
+    [InlineData("K7P4")]
+    [InlineData("XXXX")]
+    [InlineData("")]
+    public void Already_picked_up_is_order_already_picked_up_and_keeps_the_first_time(string provided)
+    {
+        var order = PickedUpOrder();
+
+        var act = () => order.ConfirmPickup(provided, MuchLater.AddMinutes(10));
+
+        act.Should().Throw<DomainException>().Which.Code.Should().Be("order_already_picked_up");
         order.Status.Should().Be(OrderStatus.PickedUp);
         order.PickedUpAt.Should().Be(MuchLater, "the first pickup time is kept");
     }
@@ -233,8 +287,7 @@ public sealed class OrderStatusTests
     [InlineData(Station.Bar, PartStatus.InPreparation)]
     public void Any_part_change_after_pickup_is_an_invalid_status_transition(Station station, PartStatus target)
     {
-        var order = ReadyOrder();
-        order.MarkPickedUp(MuchLater);
+        var order = PickedUpOrder();
 
         var act = () => order.MovePart(station, target, MuchLater.AddMinutes(1));
 
@@ -245,8 +298,7 @@ public sealed class OrderStatusTests
     [Fact]
     public void Recalculate_status_keeps_picked_up()
     {
-        var order = ReadyOrder();
-        order.MarkPickedUp(MuchLater);
+        var order = PickedUpOrder();
 
         order.RecalculateStatus();
 

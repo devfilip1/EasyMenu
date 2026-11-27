@@ -32,7 +32,7 @@ public sealed class OrdersEndpointsTests(EasyMenuApiFactory factory) : Integrati
     {
         var order = (await Api.ListKitchenOrdersAsync(kitchenToken)).Single(o => o.PickupCode == pickupCode);
         await Api.MakeReadyAsync(kitchenToken, order);
-        (await Api.PutPickupAsync(kitchenToken, order.Id)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await Api.PutPickupAsync(kitchenToken, order)).StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     // ------------------------------------------------------------------ list

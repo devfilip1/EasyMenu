@@ -128,6 +128,8 @@ public sealed class CrossTenantSweepTests(EasyMenuApiFactory factory) : Integrat
             "/api/menu-items/{id}" => new MenuItemRequest(b.Menu.Drinks.Id, "Hackeado", null, 1, null, true, "bar"),
             "/api/menu-items/{id}/availability" => new AvailabilityRequest(false),
             "/api/kitchen/orders/{orderId}/parts/{station}/status" => new UpdatePartStatusRequest("ready"),
+            // The right code of A's order: only the tenant check may refuse it.
+            "/api/kitchen/orders/{orderId}/pickup" => new ConfirmPickupRequest(a.Order.PickupCode),
             _ => null,
         };
 

@@ -129,7 +129,7 @@ public sealed class KitchenHubTests(EasyMenuApiFactory factory) : IntegrationTes
         var connection = await ConnectAsync(kitchenToken);
         var pickedUp = HubTestHelpers.WaitForEventAsync<OrderPickedUpEventDto>(connection, "OrderPickedUp");
 
-        (await Api.PutPickupAsync(kitchenToken, order.Id)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await Api.PutPickupAsync(kitchenToken, order)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await pickedUp).Should().Be(new OrderPickedUpEventDto(order.Id, placed.PickupCode));
     }
@@ -162,7 +162,7 @@ public sealed class KitchenHubTests(EasyMenuApiFactory factory) : IntegrationTes
         await PlaceMixedOrderAsync(ownerA, menuA);
         var orderA = (await Api.ListKitchenOrdersAsync(kitchenA)).Single();
         await Api.MakeReadyAsync(kitchenA, orderA);
-        (await Api.PutPickupAsync(kitchenA, orderA.Id)).StatusCode.Should().Be(HttpStatusCode.OK);
+        (await Api.PutPickupAsync(kitchenA, orderA)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         await pickedUpByA; // sanity: events are flowing to A
         await Task.Delay(TimeSpan.FromSeconds(2));

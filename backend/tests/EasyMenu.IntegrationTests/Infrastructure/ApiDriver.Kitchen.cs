@@ -14,9 +14,17 @@ public sealed partial class ApiDriver
         CreateClient(token).PutAsJsonAsync(
             $"/api/kitchen/orders/{orderId}/parts/{station}/status", new UpdatePartStatusRequest(status), Json);
 
-    /// <summary><c>PUT /api/kitchen/orders/{orderId}/pickup</c> (raw response).</summary>
-    public Task<HttpResponseMessage> PutPickupAsync(string? token, Guid orderId) =>
-        CreateClient(token).PutAsync($"/api/kitchen/orders/{orderId}/pickup", content: null);
+    /// <summary><c>PUT /api/kitchen/orders/{orderId}/pickup</c> with <c>{ pickupCode }</c> (raw response).</summary>
+    public Task<HttpResponseMessage> PutPickupAsync(string? token, Guid orderId, string? pickupCode) =>
+        PutPickupRawAsync(token, orderId, JsonContent.Create(new ConfirmPickupRequest(pickupCode), options: Json));
+
+    /// <summary>Confirms the pickup of <paramref name="order"/> with its own code (raw response).</summary>
+    public Task<HttpResponseMessage> PutPickupAsync(string? token, KitchenOrderDto order) =>
+        PutPickupAsync(token, order.Id, order.PickupCode);
+
+    /// <summary><c>PUT /api/kitchen/orders/{orderId}/pickup</c> with an arbitrary body (raw response).</summary>
+    public Task<HttpResponseMessage> PutPickupRawAsync(string? token, Guid orderId, HttpContent? content) =>
+        CreateClient(token).PutAsync($"/api/kitchen/orders/{orderId}/pickup", content);
 
     /// <summary>Places an order and returns it as seen by the kitchen panel (matched by pickup code).</summary>
     public async Task<(PublicOrderDto Public, KitchenOrderDto Kitchen)> PlaceKitchenOrderAsync(
@@ -42,6 +50,8 @@ public sealed partial class ApiDriver
 }
 
 public sealed record UpdatePartStatusRequest(string Status);
+
+public sealed record ConfirmPickupRequest(string? PickupCode);
 
 public sealed record KitchenOrderItemDto(string Name, int Quantity);
 
