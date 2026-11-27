@@ -65,7 +65,7 @@ test('the owner filters the orders by status and opens one', async ({ ownerPage:
   const done = await placeOrder(request, seeded.slug, [{ menuItemId: caipirinha.id, quantity: 2 }], 'Ana');
   const doneId = await orderIdByPickupCode(seeded.token, done.pickupCode);
   await advancePart(seeded.token, doneId, 'bar', 'ready');
-  await pickUp(seeded.token, doneId);
+  await pickUp(seeded.token, doneId, done.pickupCode);
 
   await owner.goto('/admin/pedidos');
   const rows = owner.getByTestId('order-row');

@@ -43,7 +43,7 @@ test('the order page follows the kitchen live and can be found again from the me
   await expect(banner).toContainText(code);
 
   // Picked up.
-  await pickUp(seeded.token, orderId);
+  await pickUp(seeded.token, orderId, code);
   await expect(status).toContainText('Retirado', REALTIME);
   await expect(banner).toHaveCount(0);
 

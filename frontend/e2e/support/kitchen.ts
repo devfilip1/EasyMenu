@@ -45,7 +45,15 @@ export function advancePart(
   );
 }
 
-/** PUT /api/kitchen/orders/{orderId}/pickup (only for ready orders). */
-export function pickUp(token: string, orderId: string): Promise<KitchenOrder> {
-  return kitchenCall<KitchenOrder>(token, 'PUT', `/api/kitchen/orders/${encodeURIComponent(orderId)}/pickup`);
+/**
+ * PUT /api/kitchen/orders/{orderId}/pickup with `ConfirmPickupRequest { pickupCode }` (FR-027a):
+ * only for ready orders, and the code must be this order's pickup code.
+ */
+export function pickUp(token: string, orderId: string, pickupCode: string): Promise<KitchenOrder> {
+  return kitchenCall<KitchenOrder>(
+    token,
+    'PUT',
+    `/api/kitchen/orders/${encodeURIComponent(orderId)}/pickup`,
+    { pickupCode },
+  );
 }

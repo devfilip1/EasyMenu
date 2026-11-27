@@ -3,13 +3,14 @@ import { placeOrder } from './support/api';
 import { expect, test } from './support/fixtures';
 
 /**
- * US3 (T070): the Owner runs the kitchen panel (/cozinha, FR-033a) while a guest buys in another
- * browser context. Runs against the real API (green once T063 and T067 are done).
+ * US3 (T070, T156): the Owner runs the kitchen panel (/cozinha, FR-033a) while a guest buys in
+ * another browser context. Runs against the real API (green once T153 and T155 are done).
  *
  * UI contract shared with kitchen.page.spec.ts:
  * - sections are accessible regions named "Bar" and "Cozinha" (<section aria-labelledby>);
  * - one card `[data-testid="kitchen-card"]` per order part, in the section of its station;
- * - buttons "Em preparo" / "Pronto" per part and "Retirado" once the whole order is ready.
+ * - buttons "Em preparo" / "Pronto" per part; once the whole order is ready, a "Código de
+ *   retirada" field and "Confirmar retirada" (FR-027a: the server checks the code).
  */
 const REALTIME = { timeout: 5_000 };
 
@@ -53,20 +54,37 @@ test('the kitchen follows a bar + kitchen order from payment to pickup', async (
   await expect(cozinha).toContainText('Batata frita');
   await expect(cozinha).not.toContainText('Caipirinha');
 
-  // Bar: Em preparo → Pronto. The kitchen part is still pending, so no "Retirado" yet.
+  // Bar: Em preparo → Pronto. The kitchen part is still pending, so no pickup yet.
   await bar.getByRole('button', { name: /em preparo/i }).click();
   await expect(bar.getByRole('button', { name: /em preparo/i })).toHaveCount(0);
   await bar.getByRole('button', { name: /^pronto$/i }).click();
   await expect(bar.getByRole('button', { name: /^pronto$/i })).toHaveCount(0);
-  await expect(orderCards(kitchen, code).getByRole('button', { name: /retirado/i })).toHaveCount(0);
+  await expect(orderCards(kitchen, code).getByRole('button', { name: /confirmar retirada/i })).toHaveCount(0);
 
-  // Cozinha: Pronto → the whole order is ready and offers "Retirado".
+  // Cozinha: Pronto → the whole order is ready and asks for the pickup code.
   await cozinha.getByRole('button', { name: /^pronto$/i }).click();
-  const pickUp = orderCards(kitchen, code).getByRole('button', { name: /retirado/i }).first();
-  await expect(pickUp).toBeVisible();
+  const pickupCard = orderCards(kitchen, code).filter({ has: kitchen.getByLabel(/c[óo]digo de retirada/i) }).first();
+  const codeField = pickupCard.getByLabel(/c[óo]digo de retirada/i);
+  const confirm = pickupCard.getByRole('button', { name: /confirmar retirada/i });
+  await expect(confirm).toBeVisible();
+  await expect(kitchen.getByRole('button', { name: /^retirado$/i })).toHaveCount(0);
 
-  // Retirado: the order leaves the panel.
-  await pickUp.click();
+  // A wrong code is refused and the order stays.
+  const wrong = code === 'ZZZZ' ? 'YYYY' : 'ZZZZ';
+  await codeField.fill(wrong);
+  await confirm.click();
+  await expect(pickupCard).toContainText('Código de retirada incorreto');
+  await expect(orderCards(kitchen, code)).toHaveCount(2);
+
+  // An empty code is not sent.
+  await codeField.fill('');
+  await confirm.click();
+  await expect(pickupCard).toContainText('Informe o código de retirada');
+  await expect(orderCards(kitchen, code)).toHaveCount(2);
+
+  // The right code, lowercase and padded, confirms (the server trims and uppercases it).
+  await codeField.fill(` ${code.toLowerCase()} `);
+  await confirm.click();
   await expect(orderCards(kitchen, code)).toHaveCount(0);
 });
 
