@@ -943,7 +943,7 @@ Regras do contrato (detalhes na `description` da operação):
     - botão desabilitado durante o envio;
     - pedidos não prontos não mostram o campo.
 - [ ] T155 [IMPL-FRONT] `frontend/src/app/core/errors/problem.ts` (3 mensagens) e cartão Pronto em `frontend/src/app/features/kitchen/kitchen.page.ts`, usando `shared/forms` (depende de: T154). T154 verde, e `npm test` e `npm run build` verdes.
-- [ ] T156 [TEST-FRONT] E2E e helpers com o código (depende de: T152, T154). Fica verde quando T153 e T155 estiverem prontas.
+- [X] T156 [TEST-FRONT] E2E e helpers com o código (depende de: T152, T154). Fica verde quando T153 e T155 estiverem prontas.
   - `frontend/e2e/support/kitchen.ts`: `pickUp(token, orderId, pickupCode)` envia o corpo, e os chamadores passam o código do pedido;
   - `frontend/e2e/us3-kitchen.spec.ts`, em vez de clicar em "Retirado":
     - digitar um código errado mostra "Código de retirada incorreto" e o pedido continua;
@@ -954,7 +954,7 @@ Regras do contrato (detalhes na `description` da operação):
 
 ### Abas do admin em 360 px (FR-039)
 
-- [ ] T157 [TEST-FRONT] Novo `frontend/e2e/admin-tabs-360.spec.ts` (projetos mobile e desktop, viewport forçado em 360×740) (depende de: T017):
+- [X] T157 [TEST-FRONT] Novo `frontend/e2e/admin-tabs-360.spec.ts` (projetos mobile e desktop, viewport forçado em 360×740) (depende de: T017):
   - em `/admin/cardapio`, logado como Dono: `document.documentElement.scrollWidth <= clientWidth`;
   - o `nav[aria-label="Seções do painel"]` tem `scrollWidth <= clientWidth` e não usa `overflow-x: auto|scroll`;
   - as 6 abas (Cardápio, Equipe, Pedidos, Estabelecimento, Painel da cozinha, Sair) têm bounding box inteira dentro do viewport e altura ≥ 44 px, e cada link navega ao ser clicado sem rolar para o lado;
