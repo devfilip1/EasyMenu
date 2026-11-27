@@ -959,7 +959,7 @@ Regras do contrato (detalhes na `description` da operação):
   - o `nav[aria-label="Seções do painel"]` tem `scrollWidth <= clientWidth` e não usa `overflow-x: auto|scroll`;
   - as 6 abas (Cardápio, Equipe, Pedidos, Estabelecimento, Painel da cozinha, Sair) têm bounding box inteira dentro do viewport e altura ≥ 44 px, e cada link navega ao ser clicado sem rolar para o lado;
   - repetir em 412 px e 1280 px.
-- [ ] T158 [IMPL-FRONT] Abas responsivas em `frontend/src/app/features/admin/admin-shell.component.ts` (ex.: `flex-wrap: wrap` e `gap`, sem largura mínima fixa nem `white-space: nowrap` que estoure a linha) (depende de: T157). T157 verde, e `admin-shell.component.spec.ts` e `mobile-360.spec.ts` continuam verdes.
+- [X] T158 [IMPL-FRONT] Abas responsivas em `frontend/src/app/features/admin/admin-shell.component.ts` (ex.: `flex-wrap: wrap` e `gap`, sem largura mínima fixa nem `white-space: nowrap` que estoure a linha) (depende de: T157). T157 verde, e `admin-shell.component.spec.ts` e `mobile-360.spec.ts` continuam verdes.
 
 ---
 

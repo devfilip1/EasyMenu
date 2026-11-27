@@ -9,16 +9,13 @@ import { AuthStore } from '../../core/auth/auth.store';
   imports: [RouterLink, RouterLinkActive, RouterOutlet],
   template: `
     <header class="topbar">
-      <div class="page row topbar-inner">
-        <div class="grow">
-          <span class="brand">EasyMenu</span>
-          @if (establishmentName(); as name) {
-            <span class="muted establishment">{{ name }}</span>
-          }
-        </div>
-        <a class="btn btn-sm" routerLink="/cozinha">Painel da cozinha</a>
-        <button class="btn btn-sm" type="button" (click)="logout()">Sair</button>
+      <div class="page title">
+        <span class="brand">EasyMenu</span>
+        @if (establishmentName(); as name) {
+          <span class="muted establishment">{{ name }}</span>
+        }
       </div>
+      <!-- Wraps onto more lines instead of scrolling sideways (FR-039, 360 px and up). -->
       <nav class="page tabs" aria-label="Seções do painel">
         @for (section of sections; track section.path) {
           <a
@@ -29,6 +26,9 @@ import { AuthStore } from '../../core/auth/auth.store';
             >{{ section.label }}</a
           >
         }
+        <span class="spacer" aria-hidden="true"></span>
+        <a class="tab" routerLink="/cozinha">Painel da cozinha</a>
+        <button class="tab tab-button" type="button" (click)="logout()">Sair</button>
       </nav>
     </header>
     <main class="page">
@@ -43,30 +43,42 @@ import { AuthStore } from '../../core/auth/auth.store';
       top: 0;
       z-index: 10;
     }
-    .topbar-inner {
-      padding-bottom: 0.25rem;
-    }
-    .grow {
-      flex: 1 1 auto;
+    .title {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
       gap: 0.5rem;
+      padding-bottom: 0;
+    }
+    .establishment {
+      overflow-wrap: anywhere;
     }
     .tabs {
       display: flex;
-      gap: 0.25rem;
-      overflow-x: auto;
-      padding-top: 0;
+      flex-wrap: wrap;
+      gap: 0 0.25rem;
+      padding-top: 0.25rem;
       padding-bottom: 0;
     }
+    .spacer {
+      flex: 1 1 0;
+    }
     .tab {
-      padding: 0.6rem 0.75rem;
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0 0.6rem;
       color: var(--text-muted);
       text-decoration: none;
+      font: inherit;
       font-weight: 600;
-      white-space: nowrap;
+      background: none;
+      border: 0;
       border-bottom: 3px solid transparent;
+      cursor: pointer;
+    }
+    .tab:hover {
+      color: var(--text);
     }
     .tab.active {
       color: var(--primary);
